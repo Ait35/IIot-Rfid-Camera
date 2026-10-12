@@ -5,7 +5,7 @@ export const upload_img_control = async ( req:Request , res:Response ) => {
     const { log_id , device_id} = req.body;
     const file = req.file;
     try{
-        if (!req.file) {
+        if (!file) {
             console.log('ไม่พบไฟล์รูปภาพ');
             return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });;
         }
@@ -14,7 +14,7 @@ export const upload_img_control = async ( req:Request , res:Response ) => {
             return  res.status(400).json({ error: 'not found log id or ecp' });
         }
         console.log('uploading file');
-        const imagePath = `/uploads/${req.file.filename}`;
+        const imagePath = `/uploads/${file.filename}`;
 
         const result = await ImageService.processUploadedImage(log_id , device_id , imagePath);
         if (!result.success) {

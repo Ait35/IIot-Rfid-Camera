@@ -15,6 +15,8 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+// และให้ไปดึง IP จริงๆ ของ User จาก Header (เช่น X-Forwarded-For) มาใส่ใน req.ip
+//app.set('trust proxy', 1); // เลข 1 คือจำนวนชั้นของ Proxy (ส่วนใหญ่เป็น 1 ถ้าใช้ Cloudflare หรือ Nginx)
 
 app.use(cors());
 app.use(express.json());

@@ -31,6 +31,10 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
             // กรณีที่ 2 Token ไม่ตรงกับใน Redis แปลว่ามีคนล็อกอินซ้อน Token นี้เลยกลายใช้ไม่ได้
             return res.status(401).json({ message: 'Logged in from another device. You have been kicked out!' });
         }
+        // กัน Crash
+        if (!(req as any).payload) {
+            (req as any).payload = {};
+        }
 
         (req as any).payload = decoded; //.ใส่ user id ที่เกะจาก token ไว้ที่ key payload (เป็น key ตั้งใหม่)
         console.log(decoded);

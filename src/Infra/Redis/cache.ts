@@ -18,7 +18,7 @@ export const QueryRedis = {
                 EX: 3600 // ]ลบออกใน 1 ชั่วโมง
             });
         
-            console.log(`Saved Cache for ${key} -> result:`, result);
+            console.log(`✅ Saved Cache for ${key} -> result:`, result);
             return { success: true, status: 200, data: result };
         } catch (error) {
             console.error('Redis Set Error:', error);

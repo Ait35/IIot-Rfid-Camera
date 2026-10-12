@@ -11,6 +11,7 @@ export const connect_DB = async (): Promise<Pool> => {
     console.log('Port:', process.env.DB_PORT);
     try{
         db = new Pool ({
+            max: 50,
             host: process.env.DB_HOST,
             user: process.env.DB_USER,
             password: process.env.DB_PASSWORD,

@@ -149,3 +149,69 @@ export const get2TablePage = async (
             return { success: false, status: 500, error: 'Failed to get data Mqtt' };
         }
     }
+// export const dynamicGetPage = async (
+//     select : string[] ,
+//     from : string , 
+//     joinOn : string[] ,
+//     where : string ,
+//     values : any[] ,
+//     order : string ,
+//     page : number , 
+//     limit : number
+//     )=>{
+//     console.log('----- API action: Ready Query -----');
+//     if (!db) {
+//         return { success: false, status: 500, error: 'Database not connected' };
+//     }
+
+//     let sql = `SELECT `;
+//     let sql_join = `LEFT JOIN` ;
+//     let sql_where = `WHERE `;
+
+//     for(let i = 0; i < select.length; i++){
+//         sql += `T${i+1}.* ,`;
+//         if(i !== 0){
+//             sql_join += `
+//             ${select[i]} AS T${i+1} ON `;
+
+//             if(joinOn[i]?.length){
+//                 for(let j = 0; j < (joinOn[i] as any).length; j++){
+//                     sql_join += `${(joinOn[i] as any)[j]} AND `;
+//                 }
+//                 sql_join = sql_join.slice(0, -4);
+//             }
+//         } 
+//     }
+//     sql = sql.slice(0, -1) + ` FROM ${from} AS T1`;
+//     for(let i = 0; i < where.length; i++){
+//         sql_where += `${where[i]} AND `;
+//     }
+//     sql_where = sql_where.slice(0, -4);
+
+//     sql += `${sql_join} 
+//     ${sql_where} 
+//     ORDER BY T1.${order} 
+//     LIMIT $1 
+//     OFFSET $2`;
+
+//     try{
+//         const res = await db.query(sql , [limit , (page - 1) * limit , ...values]);
+//         if(res.rows.length === 0){
+//             console.log('❌ Not Found');
+//             return { success: false, status: 404, error: 'Not Found' };
+//         }
+
+//         console.log('----- Query Successful! -----');
+//         return { success: true, status: 200, data: res.rows };
+//     } catch (error) {
+//         console.error('❌ Database in getMqtt:', error);
+//         return { success: false, status: 500, error: 'Failed to get data Mqtt' };
+//     }
+// }
+
+        // SELECT  T1.*, T2.* FROM device_info AS T1
+        // LEFT JOIN mqtt AS T2 ON T1.group_id = T2.group_id AND T2.is_delete = FALSE
+        // WHERE T1.is_delete = FALSE AND T1.key_api = 'dev_a24c4a0430db08459faa0194eb51946dc73f500b8f31ab4a9fb858ede783c9e1'
+        // ORDER BY T1.device_id DESC 
+        // LIMIT 1 
+        // OFFSET 0;

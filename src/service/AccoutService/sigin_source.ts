@@ -14,8 +14,8 @@ interface user_req {
     last_name: string;
 }
 
-export const SiginService = {
-    async sigin(university_id : string, password : string , ip:string , userAgent:string) {
+export const SigninService = {
+    async signin(university_id : string, password : string , ip:string , userAgent:string) {
         console.log('----- API action: signin service -----');
         if(!db) throw new Error('ไม่มีการเชื่อมต่อกับ DB ได้');
 

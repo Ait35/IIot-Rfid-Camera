@@ -19,14 +19,18 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
     }
     console.log('API Key :', api_key);
 
-    try {
+    try{
         //prefix : string, cacheKey : string, DBtable : string , DBcolumn : string
-        const result = await Helper.Service.readAndWriteLog('ReqConnect' , 'Device_info' , null ,
+        const result = await Helper.Service.readAndWriteLog('ReqConnect' , 'Device_info' , null , null,
              async ()=>  {
                 const device_data = await getData('device_info', 'key_api', api_key, true);
                 const mqttdata = await getData('mqtt', 'group_id', device_data.data.group_id, true);
 
-                const payload =  { ...mqttdata.data, device_id : device_data.data.device_id , mac : device_data.data.mac };
+                const payload =  { 
+                    ...mqttdata.data? mqttdata.data : null, 
+                    device_id : device_data.data.device_id? device_data.data.device_id : null , 
+                    mac : device_data.data.mac? device_data.data.mac : null 
+                };
                 return { 
                     result: payload,
                     logPayload: payload,
@@ -54,3 +58,17 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
         console.log("====================================================");
     }
 };
+
+// SELECT T1.device_info, T2.mqtt FROM device_info AS T1
+// LEFT JOIN mqtt AS T2 ON T1.group_id = T2.group_id AND T2.is_delete = FALSE
+// WHERE T1.is_delete = FALSE
+// ORDER BY T1.${sort_by} ${upperOrder}
+// LIMIT 1 
+// OFFSET 0
+// `;
+// SELECT  T1.*, T2.* FROM device_info AS T1
+// LEFT JOIN mqtt AS T2 ON T1.group_id = T2.group_id AND T2.is_delete = FALSE
+// WHERE T1.is_delete = FALSE AND T1.key_api =dev_a24c4a0430db08459faa0194eb51946dc73f500b8f31ab4a9fb858ede783c9e1
+// ORDER BY T1.device_id DESC 
+// LIMIT 1 
+// OFFSET 0;

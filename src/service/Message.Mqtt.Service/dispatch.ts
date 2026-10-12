@@ -1,5 +1,6 @@
-import { insertRfidLog } from './rfid.Service.js';
+import { insertEcpAndEcpLog } from './EPC.Service.js';
 import { updateStatusService } from './status.Service.js';
+import { publishMessage } from '../../Infra/Mqtt.infra.js';
 
 interface C_Log {
     device_id: number;
@@ -17,9 +18,19 @@ interface C_ECP_Tag {
     is_delete? : boolean;
 }
 
+const triggerCAM = async (TopicCam: string , log_id: number) => {
+    if(!log_id){
+        console.log('❌ No log_id found!');
+        return;
+    }
+    const payload = JSON.stringify({log_id: log_id , cap: "1"})
+    console.log('📩 TopicCam : ', TopicCam , ' Payload : ', payload);
+    await publishMessage(TopicCam, payload);
+}
+
 // callBack function สำหรับ mqtt ที่ถูกเรียกใช้ใน callback ของ mqtt อีกที
 export const dispatch_message = async (topic : string, message : string) => {
-    console.log('----- Mqtt action: dispatch_message -----');
+    console.log('----- Message reveived : dispatch_message -----');
     const topicParts = topic.split('/');
     const payload = JSON.parse(message);
     
@@ -48,14 +59,30 @@ export const dispatch_message = async (topic : string, message : string) => {
 
     switch(topicParts[1]){
         case 'rfid':
-            const TopicCam = `${process.env.MQTT_TOPIC_PUBLISH}/group${payload.group_id}/${topicParts[3]}/${topicParts[4]}/${topicParts[5]}/${topicParts[6]}`;
-            return await insertRfidLog(payload, dataOJB, logOJB , TopicCam);1
-
+            // const TopicCam = `${process.env.MQTT_TOPIC_PUBLISH}/group${payload.group_id}/${topicParts[3]}/${topicParts[4]}/${topicParts[5]}/${topicParts[6]}`;
+            const TopicCam = `${process.env.MQTT_TOPIC_PUBLISH}/group${payload.group_id}`;
+            
+            const result = await insertEcpAndEcpLog(payload, dataOJB, logOJB);
+            console.log(result);
+            if(!result ||!result.success ){
+                console.log('❌ Insert Ecp or Ecp Log Failed!');
+                return;
+            }
+            if(result.data === null || !result.data.log_id){
+                console.log('❌ No Ecp_id found!');
+                return;
+            }
+            //ถ้าเจอ ECP ใน cache หรือเจอใน DB แล้ว set Cache สำเร็จ จะสั่งให่ถ่ายรูป
+            await triggerCAM(TopicCam , result.data.log_id);
+            console.log('=========================');
+            break; 
         case 'status':
-  
-            return await updateStatusService(payload);
+            await updateStatusService(payload);
+            console.log('=========================');
+            return 
 
         default:
-            return { success: false, message: 'Invalid topic format' };
+            console.log('Invalid topic format');
+            return;
         };
     }

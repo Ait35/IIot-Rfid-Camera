@@ -39,8 +39,9 @@ const Service = {
         actionName : string,
         table : string,
         by_user_id: number | null,
-        Callfunction:() => Promise<{ result: any; logPayload: any }>)
-    {
+        target_id: number | null,
+        Callfunction:() => Promise<{ result: any; logPayload: any }>
+    ){
         console.log(`----- API action: ${actionName} -----`);
          
         try{
@@ -53,12 +54,14 @@ const Service = {
                 const {first_name , ...temp} = Item;
                 return {...temp , by_user_name : first_name }; 
             });
-
+            if(logPayload.device_id){
+                target_id = logPayload.device_id;
+            }
             const System_log = await ActivityLogService.Insert_logAction(
                 Number(by_user_id) || null,
                 'GET',
                 table, 
-                null, 
+                target_id,
                 logPayload
             );
             if(!System_log.success){
@@ -124,7 +127,7 @@ const Service = {
             }
 
             if (cache_result.success && cache_result.status === 404) {
-                console.log('----- Cache Miss: Call to Database -----');
+                console.log('⏳ Cache Miss: Call to Database');
                 const db_data = await getData(DBtable, DBcolumn, cacheKey, has_delete);
                 //select * from map_tag where epc = cacheKey and is_delete = false
 
@@ -137,10 +140,10 @@ const Service = {
                     return {success: false, status: 500, error: 'Error while fetching data from database' };
                 }
 
-                let CacheData = db_data.data;
+                let DB_Data = db_data.data;
                 if(callfunction){
                     console.log('----- Call custom function -----');
-                    const customResult = await callfunction(CacheData); //getData กรณีที่ต้องการ map key กับข้อมูลในตารางอื่น
+                    const customResult = await callfunction(DB_Data); //getData กรณีที่ต้องการ map key กับข้อมูลในตารางอื่น
                     if(!customResult.success){
                         console.log('----- Error while calling custom function -----');
                         return {success: false, status: 500, error: 'Error while calling custom function' };
@@ -149,20 +152,20 @@ const Service = {
                         console.log('----- Custom function returned no data -----');
                         return {success: false, status: 404, error: 'Data not found' };
                     }
-                    CacheData = customResult.data;
+                    DB_Data = customResult.data;
                 }
-                const saveCache = await QueryRedis.setCache(cacheKey, prefix, CacheData);
+                const saveCache = await QueryRedis.setCache(cacheKey, prefix, DB_Data);
 
                 if(!saveCache.success){
                     console.log('----- Error while saving data to cache -----');
                     return {success: false, status: 500, error: 'Error while saving data to cache' };
                 }else{
-                    return {success: true, status: 200, data: CacheData};
+                    return {success: true, status: 200, data: DB_Data};
                 }
             }
             
-            console.log('----- Cache Hit! -----');
-            console.log(cache_result.data);
+            console.log('✅ Cache Hit! ');
+            //console.log(cache_result.data);
             return {success: true, status: 200, data: cache_result.data };
         }catch(error){
             console.error('Error occurred while checking cache or fetching data from database:', error);

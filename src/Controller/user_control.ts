@@ -1,8 +1,8 @@
 import { Response , Request} from 'express';
-import { SiginService } from '../service/AccoutService/sigin_source.js';
+import { SigninService } from '../service/AccoutService/sigin_source.js';
 import { LoginService } from '../service/AccoutService/login_source.js';
 
-export const Sigin_control = async (req:Request, res:Response) => {
+export const Signin_control = async (req:Request, res:Response) => {
     console.log('----- API action: user control -----');
     try {
         //กรอก data จาก wed ครบเปล่า
@@ -16,7 +16,7 @@ export const Sigin_control = async (req:Request, res:Response) => {
         }
 
         //เรียก service
-        const sigin_res = await SiginService.sigin(university_id, password , ipAddress, userAgent); //return Json
+        const sigin_res = await SigninService.signin(university_id, password , ipAddress, userAgent); //return Json
 
         if(!sigin_res.success){
             console.log('error in sigin service :' , sigin_res);
