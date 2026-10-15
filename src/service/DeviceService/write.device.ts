@@ -3,6 +3,7 @@ import { Helper } from '../Class_service.js';
 import { publishMessage } from '../../Infra/Mqtt.infra.js';
 import { InsertData } from '../../Repository/insertQuery.js';
 import { updateData , updateAndGet1Table} from '../../Repository/updataQuery.js';
+import { getData } from '../../Repository/ReadQuery.js';
 
 interface user_req {
     by_user_id?: string;
@@ -91,25 +92,18 @@ export const DeviceWrite = {
                 if (is_delete !== undefined) {
                     result = await Helper.Query.Tran_SetDelete('device_info', 'device_id', device_id, is_delete, transaction);
                 } else {
-                        // tableName:string ,
-                        // target_name_id:string ,
-                        // target_id:number ,
-                        // user_req: Record<any, any>,
-                        // tableName2:string ,
-                        // FK_name_id1:string ,
-                        // FK_name_id2:string ,
-                        // transaction: PoolClient) => 
+                    
                     result = await updateAndGet1Table('device_info', 'device_id', device_id, req, 'mqtt', 'group_id', 'group_id', transaction);
                 }
-               
+                const Gettopic = await getData ('mqtt', 'group_id', result.data.group_id, true, transaction);
                 const topicCMD = 
-                    `${process.env.MQTT_TOPIC_PUBLISH}/group${result.data.group_id}/${result.data.mac}/${result.data.topic}`;
+                    `${process.env.MQTT_TOPIC_PUBLISH_CMD}/group${result.data.group_id}/${Gettopic.data.topic}/${result.data.mac}`;
                 console.log('📩 TopicCam : ', topicCMD);
                 await publishMessage(topicCMD, JSON.stringify({CMD : "disconnect"}));
                 return { 
                     result, 
                     recordId: device_id, 
-                    logPayload : { ...req, ip_address, user_agent: userAgent } };
+                    logPayload : { ...req, ip_address, user_agent: userAgent , mqtt: "disconnect" } };
             }
         );
     }

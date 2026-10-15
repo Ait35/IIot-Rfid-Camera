@@ -4,6 +4,7 @@ import { ActivityLogService } from '../../Repository/Activity_Log/ActivityQuery.
 import { Helper } from '../Class_service.js';
 import { InsertData } from '../../Repository/insertQuery.js';
 import { updateData } from '../../Repository/updataQuery.js';
+import { getData } from '../../Repository/ReadQuery.js';
 
 interface user_req {
     mqtt_id?: number; 
@@ -117,9 +118,9 @@ export const MqttWrite = {
             }
             await transaction.query('COMMIT');
 
-            const topicCMD = `${process.env.MQTT_TOPIC_PUBLISH}/group${result.data.group_id}`;
+            const topicCMD = `${process.env.MQTT_TOPIC_PUBLISH_CMD}/group${result.data.group_id}/${result.data.topic}/broadcast`;
             console.log('📩 TopicCam : ', topicCMD);
-            await publishMessage(topicCMD, JSON.stringify({CMD : "group_disconnect"}));
+            await publishMessage(topicCMD, JSON.stringify({CMD : "disconnect"}));
 
             console.log('----- Add System Log Successful! -----');
             return result;

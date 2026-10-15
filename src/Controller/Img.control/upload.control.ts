@@ -2,9 +2,10 @@ import { Response , Request} from 'express';
 import { ImageService } from '../../service/image.service.js';
 
 export const upload_img_control = async ( req:Request , res:Response ) => {
-    const { log_id , device_id ,mac} = JSON.parse(req.body.Jsondata);
-    const file = req.file;
-    try{
+    try{    
+        const { log_id , device_id ,mac} = JSON.parse(req.body.Jsondata);
+        const file = req.file;
+        
         if (!file) {
             console.log('ไม่พบไฟล์รูปภาพ');
             return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });;

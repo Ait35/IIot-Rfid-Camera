@@ -1,7 +1,6 @@
 import { Router } from 'express'; 
 import path_login_sigin from './path/path_login_sigin.js';
 import path_MQTT from './path/path_MQTT.js';
-import Automated_Test from './path/Automated_Test.js';
 import path_group from './path/path.group.js';
 import path_device from './path/path.device.js';
 import path_mapTag from './path/path.mapTag.js';
@@ -18,7 +17,5 @@ router.use(path_mapTag);
 router.use(path_dashboard);
 router.use(path_upload_img);
 
-//admin test ค่อยลบ
-router.use(Automated_Test);
 
 export default router;

@@ -22,6 +22,9 @@ export const updateStatusService =  async (payload : any) => {
     }else if(statusDevice.status === true){
         console.log('🟢 Device up');
     }
+    if (payload.free_heap !== undefined) {
+        console.log(`🩺 [Health Monitor] MAC: ${payload.mac} | Free RAM: ${(payload.free_heap / 1024).toFixed(1)} KB | WiFi: ${payload.rssi} dBm`);
+    }
     return await Helper.Service.executeWithLog(
             'update_device service', 'device_info', 'UPDATE',null,
                 async (transaction) => {

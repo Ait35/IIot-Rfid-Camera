@@ -22,6 +22,16 @@ app.use(cors());
 app.use(express.json());
 // เปิดให้ Frontend เข้าถึงไฟล์รูปภาพผ่าน URL /uploads/...
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploadsImg')));
+
+app.use((req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const duration = Date.now() - start;
+        console.log(`⏱️ [${req.method}] ${req.originalUrl} - ${duration}ms (Status: ${res.statusCode})`);
+    });
+    next();
+});
+
 app.use(Router);
 
 async function startServer() {
