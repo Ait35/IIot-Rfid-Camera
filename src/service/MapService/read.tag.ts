@@ -13,7 +13,7 @@ import { Helper } from '../Class_service.js';
         const sort_by = 'epc_id';
         const order = 'DESC';
      
-        const res_query = await Helper.Service.readAndWriteLog('get_tag' , table1 , userId , 
+        const res_query = await Helper.Service.readAndWriteLog('get_tag' , table1 , userId , null, 
             async ()=>{
             const res_query = await get2TablePage(
                 table1 ,
@@ -25,7 +25,7 @@ import { Helper } from '../Class_service.js';
                 sort_by , 
                 order, 
                 page , 
-                limit 
+                limit , true, true
             );
             return {
                 result : res_query.data ,

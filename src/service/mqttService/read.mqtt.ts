@@ -14,7 +14,7 @@ import { Helper } from '../Class_service.js';
         const sort_by = 'mqtt_id';
         const order = 'DESC';
 
-        const res_query = await Helper.Service.readAndWriteLog('get_mqtt' , table1 , userId , 
+        const res_query = await Helper.Service.readAndWriteLog('get_mqtt' , table1 , userId , null, 
                 async ()=>{
                 const res_query = await get2TablePage(
                     table1 ,
@@ -26,7 +26,7 @@ import { Helper } from '../Class_service.js';
                     sort_by , 
                     order, 
                     page , 
-                    limit 
+                    limit , true, true
                 );
                 return {
                     result : res_query.data ,
@@ -41,7 +41,7 @@ import { Helper } from '../Class_service.js';
                 console.log(res_query);
                 return res_query;
             }
-        
+
             console.log(res_query);
             return res_query;
         }

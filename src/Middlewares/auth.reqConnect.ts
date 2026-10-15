@@ -24,13 +24,17 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
         const result = await Helper.Service.readAndWriteLog('ReqConnect' , 'Device_info' , null , null,
              async ()=>  {
                 const device_data = await getData('device_info', 'key_api', api_key, true);
+                if (!device_data.data) {
+                    return { result: null, logPayload: { api_key, mac } };
+                }
                 const mqttdata = await getData('mqtt', 'group_id', device_data.data.group_id, true);
-
+                
                 const payload =  { 
-                    ...mqttdata.data? mqttdata.data : null, 
-                    device_id : device_data.data.device_id? device_data.data.device_id : null , 
-                    mac : device_data.data.mac? device_data.data.mac : null 
+                    ...mqttdata.data ? mqttdata.data : null,
+                    device_id : device_data.data.device_id ? device_data.data.device_id : null ,
+                    mac : device_data.data.mac? device_data.data.mac : null
                 };
+                
                 return { 
                     result: payload,
                     logPayload: payload,
@@ -40,6 +44,10 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
         if(!result.success){
             console.log(result.error );
             return res.status(result.status).json({ message:'Unauthorized' });
+        }
+        if((result as any).data === null){
+            console.log('Key Api not match to device');
+            return res.status(401).json({ message: 'Unauthorized: Key Api not match to device' });
         }
 
         if((result as any).data.mac !== mac){

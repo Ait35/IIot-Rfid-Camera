@@ -25,6 +25,7 @@ CREATE TABLE Device_Group (
     Group_name   VARCHAR(50) NOT NULL UNIQUE,  -- ชื่อกลุ่ม เช่น 'DOOR_1'
     By_user_id   INT NOT NULL,
     created_at   TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
+    is_delete     BOOLEAN DEFAULT FALSE, 
 
     CONSTRAINT fk_group_user
         FOREIGN KEY (By_user_id)

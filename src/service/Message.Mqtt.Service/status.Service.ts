@@ -25,7 +25,7 @@ export const updateStatusService =  async (payload : any) => {
     return await Helper.Service.executeWithLog(
             'update_device service', 'device_info', 'UPDATE',null,
                 async (transaction) => {
-                    const result = await updateData('device_info', 'device_id', payload.device_id, statusDevice, transaction);
+                    const result = await updateData('device_info', 'device_id', payload.device_id, true ,statusDevice, transaction);
                     console.log('Save status in DB : ', result.data);
                     return { 
                         result, 

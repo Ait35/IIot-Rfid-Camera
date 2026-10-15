@@ -13,7 +13,7 @@ export const DeviceRead = {
         const sort_by = 'device_id';
         const order = 'DESC';
      
-        const res_query = await Helper.Service.readAndWriteLog('get_deviceInfo' , table1 , userId , 
+        const res_query = await Helper.Service.readAndWriteLog('get_deviceInfo' , table1 , userId , null,
             async ()=>{
             const res_query = await get2TablePage(
                 table1 ,
@@ -25,7 +25,7 @@ export const DeviceRead = {
                 sort_by , 
                 order, 
                 page , 
-                limit 
+                limit , true, true
             );
             return {
                 result : res_query.data ,
@@ -37,6 +37,10 @@ export const DeviceRead = {
         });
 
         if(!res_query.success){
+            console.log(res_query);
+            return res_query;
+        }
+        if(res_query.success && (res_query as any).data === null){
             console.log(res_query);
             return res_query;
         }

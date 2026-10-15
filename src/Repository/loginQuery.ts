@@ -18,7 +18,7 @@ export const LoginQuery = {
             const result = await db.query(sql, values);
             const userInfo = result.rows[0];
 
-            if (userInfo === 0) {
+            if (userInfo === 0 || !userInfo) {
                 return { success: false, status: 404, error: `not find user` };
             }
             if(userInfo.password !== password){

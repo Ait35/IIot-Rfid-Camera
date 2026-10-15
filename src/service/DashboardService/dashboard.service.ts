@@ -5,7 +5,7 @@ export const DashboardService = {
     async get_dashboardSummary(userId: number, ip_address: string, userAgent: string) {
         console.log('----- API action: get_dashboardSummary service -----');
 
-        const res_query = await Helper.Service.readAndWriteLog('get_dashboardSummary', 'dashboard', userId,
+        const res_query = await Helper.Service.readAndWriteLog('get_dashboardSummary', 'dashboard', userId, null,
             async () => {
                 // Get both stats and recent scans
                 const statsRes = await DashboardQuery.getDashboardStats();

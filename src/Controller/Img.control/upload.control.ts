@@ -2,14 +2,14 @@ import { Response , Request} from 'express';
 import { ImageService } from '../../service/image.service.js';
 
 export const upload_img_control = async ( req:Request , res:Response ) => {
-    const { log_id , device_id} = req.body;
+    const { log_id , device_id ,mac} = JSON.parse(req.body.Jsondata);
     const file = req.file;
     try{
         if (!file) {
             console.log('ไม่พบไฟล์รูปภาพ');
             return res.status(400).json({ error: 'ไม่พบไฟล์รูปภาพ' });;
         }
-        if (!log_id  || !device_id) {
+        if (!log_id  || !device_id || !mac) {
             console.log('not found log id or ecp');
             return  res.status(400).json({ error: 'not found log id or ecp' });
         }

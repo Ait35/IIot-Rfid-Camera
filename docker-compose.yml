@@ -19,8 +19,10 @@ services:
 
   redis-cache:
     image: redis:alpine
+    restart: unless-stopped
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
+    command: redis-server --requirepass ${REDIS_PASSWORD}
 
   adminer:
     image: adminer

@@ -48,12 +48,18 @@ const Service = {
             const {result, logPayload} = await Callfunction();
             // ตรวจสอบว่าเป็น Array ไหม ถ้าไม่ใช่ให้แปลงเป็น Array ชั่วคราวเพื่อทำ map
             const isArray = Array.isArray(result);
-            const data = isArray ? result : [result];
+            let cleanData: any = null;
 
-            const cleanData = data.map((Item : any)=>{
-                const {first_name , ...temp} = Item;
-                return {...temp , by_user_name : first_name }; 
-            });
+            if (result !== null && result !== undefined) {
+                const data = isArray ? result : [result];
+                const mapped = data.map((Item: any) => {
+                    if (!Item || typeof Item !== 'object') return Item;
+                        const { first_name, ...temp } = Item;
+                        return { ...temp, ...(first_name !== undefined && { by_user_name: first_name }) };
+                    });
+                cleanData = isArray ? mapped : mapped[0];
+            }
+
             if(logPayload.device_id){
                 target_id = logPayload.device_id;
             }
@@ -71,7 +77,7 @@ const Service = {
 
             console.log('----- Add System Log Successful! -----');
             console.log(' ✅ Get Successful! ');
-            return { success: true, status: 200, data: isArray ? cleanData : cleanData[0] };
+            return { success: true, status: 200, data: isArray ? cleanData : cleanData };
         }catch(error : any){
             console.error(`❌ Database ROLLBACK [${table} - GET]:`,error);
             return { success: false, status: error.status || 500, error: error.message };

@@ -23,7 +23,7 @@ export const GroupWrite = {
                 
                 return {
                     result: res_query,
-                    recordId: res_query.data.device_id, // ส่ง ID กลับไปให้ Helper ทำ Log
+                    recordId: res_query.data.group_id, // ส่ง ID กลับไปให้ Helper ทำ Log
                     logPayload: { group_name , ip_address, user_agent: userAgent }
                 };
             }
@@ -54,7 +54,7 @@ export const GroupWrite = {
                 if(is_delete !== undefined){
                     result = await Helper.Query.Tran_SetDelete('device_group', 'group_id', group_id , is_delete , transaction);
                 }else{
-                    result = await updateData('device_group', 'group_id', group_id, req, transaction);
+                    result = await updateData('device_group', 'group_id', group_id, true, req, transaction);
                 }
      
                 return {

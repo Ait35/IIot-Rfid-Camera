@@ -103,7 +103,7 @@ export const MqttWrite = {
                     user_agent : userAgent
                 }, transaction);
             }else{
-                result = await updateData(table, 'mqtt_id', mqtt_id , user_req as any , transaction);
+                result = await updateData(table, 'mqtt_id', mqtt_id , true ,user_req as any , transaction);
                 console.log('----- Update Successful! -----');
 
                 await ActivityLogService.Insert_logAction(Number(by_user_id), action , 'Mqtt', mqtt_id, {
@@ -119,7 +119,7 @@ export const MqttWrite = {
 
             const topicCMD = `${process.env.MQTT_TOPIC_PUBLISH}/group${result.data.group_id}`;
             console.log('📩 TopicCam : ', topicCMD);
-            await publishMessage(topicCMD, JSON.stringify({CMD : "disconnect"}));
+            await publishMessage(topicCMD, JSON.stringify({CMD : "group_disconnect"}));
 
             console.log('----- Add System Log Successful! -----');
             return result;

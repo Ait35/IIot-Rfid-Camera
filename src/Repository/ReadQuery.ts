@@ -96,8 +96,10 @@ export const get2TablePage = async (
     sort_by: string, 
     order: string,
     page: number, 
-    limit: number) =>
-    {
+    limit: number,
+    t1_IsDelete: boolean,
+    t2_IsDelete : boolean
+    ) =>{
         console.log('----- API action: Ready Query -----');
         if (!db) {
             return { success: false, status: 500, error: 'Database not connected' };
@@ -128,8 +130,8 @@ export const get2TablePage = async (
 
         const sql = `
             SELECT T1.${SelectT1}, T2.${SelectT2} FROM ${table1} AS T1
-            LEFT JOIN ${table2} AS T2 ON T1.${OnT1} = T2.${OnT2} AND T2.is_delete = FALSE
-            WHERE T1.is_delete = FALSE
+            LEFT JOIN ${table2} AS T2 ON T1.${OnT1} = T2.${OnT2} ${t2_IsDelete? `AND T2.is_delete = FALSE` : ``}
+            ${t1_IsDelete? `WHERE T1.is_delete = FALSE` : ``}
             ORDER BY T1.${sort_by} ${upperOrder}
             LIMIT $1 
             OFFSET $2

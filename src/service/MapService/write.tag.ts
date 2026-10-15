@@ -38,7 +38,7 @@ export const Map_tagWrite = {
                         if(is_delete !== undefined){
                             result = await Helper.Query.Tran_SetDelete('map_tag', 'epc_id', epc_id , is_delete , transaction);
                         }else{
-                            result = await updateData('map_tag', 'epc_id', epc_id, req, transaction);
+                            result = await updateData('map_tag', 'epc_id', epc_id, true, req, transaction);
                         }
              
                         return {
