@@ -15,7 +15,7 @@ const Service = {
         const token = jwt.sign(
             { user_id }, // ยัด ีuser id ไว้
             process.env.JWT_SECRET!,
-            { expiresIn: '1d' } // หมดอายุใน 1 วัน
+            { expiresIn: '1h' } // หมดอายุใน 1 วัน
         );
         return token;
     },

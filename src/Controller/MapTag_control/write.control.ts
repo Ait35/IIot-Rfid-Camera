@@ -22,7 +22,7 @@ export const mapTag_update_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const mapTag_res = await MapTagService.Map_tagWrite.update_map_tag(
+        const mapTag_res = await MapTagService.Write.update_map_tag(
             epc_id ,
             tag ,
             status ,

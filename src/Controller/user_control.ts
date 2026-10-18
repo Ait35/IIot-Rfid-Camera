@@ -67,6 +67,7 @@ export const Login_control = async (req:Request, res:Response) => {
 };
 
 import { LogoutService } from '../service/AccoutService/logout_source.js';
+import { update_acc } from '../service/AccoutService/update.acc.js';
 
 export const Logout_control = async (req: Request, res: Response) => {
     console.log('----- API action: logout control -----');
@@ -93,6 +94,47 @@ export const Logout_control = async (req: Request, res: Response) => {
     } catch (error) {
         console.error('error in logout control:', error);
         res.status(500).json({ error: 'error in logout control' });
+    } finally {
+        console.log(`============================================`);
+    }
+};
+
+export const update_acc_control = async (req: Request, res: Response) => {
+    console.log('----- API action: update_acc control -----');
+    try {
+        const userId = (req as any).payload?.user_id;
+        const { password , role , is_delete } = req.body;
+        const ipAddress = req.ip || req.socket.remoteAddress || 'Unknown IP';
+        const userAgent = (req.headers['user-agent'] as string) || 'Unknown Device';
+
+        if (!userId) {
+            console.log('missing user_id in payload');
+            return res.status(401).json({ error: 'Missing user authentication' });
+        }
+        if (!password && !role && is_delete === undefined) {
+            console.log('missing password or is_delete in payload');
+            return res.status(400).json({ error: 'Missing password or is_delete' });
+        }
+
+        const whitelist = ['admin', 'dev', 'student' , 'teacher'];
+        if(role !== undefined && !whitelist.includes(role)){
+            console.log('ไม่อยู่ในรายการที่อนุญาตให้เปลี่ยนไปใช้งาน');
+            return res.status(400).json({ error: 'ไม่อยู่ในรายการที่อนุญาตให้เปลี่ยนไปใช้งาน' });
+        }
+
+        const update_res = await update_acc(Number(userId), password, role, ipAddress, userAgent, is_delete);
+
+        if (!update_res.success) {
+            console.log('error in update_acc service:', update_res);
+            console.log(`❌ Update_acc failed`);
+            return res.status(update_res.status).json(update_res);
+        }
+
+        console.log('✅ Update_acc success');
+        res.status(200).json(update_res);
+    } catch (error) {
+        console.error('error in update_acc control:', error);
+        res.status(500).json({ error: 'error in update_acc control' });
     } finally {
         console.log(`============================================`);
     }

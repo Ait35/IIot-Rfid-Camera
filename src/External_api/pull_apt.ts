@@ -54,6 +54,14 @@ const mockUniversityDB: UniversityProfile[] = [
         role: 'student',
         status: 'active',
         // status: 'graduated',
+    },{
+        university_id: '67199999',
+        first_name: 'Gemini',
+        last_name: 'Flash3.8',
+        faculty: 'ตัวแบกโปรเจ็ค',
+        department: 'ตัวแบกโปรเจ็ค',
+        role: 'teacher',
+        status: 'active',
     }
 ];
 

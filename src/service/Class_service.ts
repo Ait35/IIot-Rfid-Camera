@@ -8,6 +8,7 @@ import { GroupWrite } from './GroupService/writ.group.js';
 import { GroupRead } from './GroupService/read_group.js';
 import { Map_tagWrite } from './MapService/write.tag.js';
 import { TagRead } from './MapService/read.tag.js';
+import { LogRead } from './LogService/read.log.js';
 
 export const Helper = {
     Service : Service,
@@ -15,8 +16,8 @@ export const Helper = {
 };
 
 export const  MqttService = {
-    MqttWrite : MqttWrite,
-    MqttRead : MqttRead
+    Write : MqttWrite,
+    Read : MqttRead
 }
 // export const  MqttQuery = {
 //     QueryWrite : 
@@ -31,8 +32,8 @@ export const  MqttService = {
 // }
 
 export const  GroupService = {
-    GroupWrite : GroupWrite,
-    GroupRead : GroupRead
+    Write : GroupWrite,
+    Read : GroupRead
 }
 // export const  GroupQuery = {
 //     QueryWrite : 
@@ -47,8 +48,8 @@ export const  GroupService = {
 // }
 
 export const  DeviceService = {
-    DeviceWrite : DeviceWrite,
-    DeviceRead : DeviceRead
+    Write : DeviceWrite,
+    Read : DeviceRead
 }
 // export const  DeviceQuery = {
 //     QueryWrite : 
@@ -57,6 +58,10 @@ export const  DeviceService = {
 //     }
 // }
 export const  MapTagService = {
-    Map_tagWrite : Map_tagWrite,
-    Map_tagRead : TagRead
+    Write : Map_tagWrite,
+    Read : TagRead
+}
+
+export const  LogService = {
+    Read : LogRead
 }

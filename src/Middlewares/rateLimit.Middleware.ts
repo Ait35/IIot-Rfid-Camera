@@ -5,6 +5,7 @@ import rateLimit from 'express-rate-limit';
 export const rateLimitAccGlobal = rateLimit({
     windowMs: 15 * 60 * 1000, // 15 minutes
     max: 100, // limit 100 requests per windowMs
+    validate: { keyGeneratorIpFallback: false },
     keyGenerator: (req: Request): string => {
         const userId = (req as any).payload?.user_id;
         
@@ -38,6 +39,21 @@ export const rateLimitLoginAndSignin = rateLimit({
         error: 'Too many requests from this IP, please try again after 5 minutes'
     }    
 });
+export const reqLimitUpdateAcc = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
+    max: 5, // limit 5 requests per windowMs
+    validate: { keyGeneratorIpFallback: false },
+    keyGenerator: (req: Request): string => {
+        const userId = (req as any).payload?.user_id;
+        
+        // ถ้ามี userId ให้ใช้ userId, ถ้าไม่มีให้ fallback ไปใช้ IP
+        return String(userId || req.ip); 
+    },
+    message: {
+        status: 429,
+        error: 'Too many requests, please try again after 15 minutes'
+    }
+});
 
 export const rateLimitIotConnect = rateLimit({
     windowMs: 5 * 60 * 1000, // 5 นาที
@@ -49,6 +65,7 @@ export const rateLimitIotConnect = rateLimit({
 export const rateLimitImageUpload = rateLimit({
     windowMs: 1 * 60 * 1000, // 1 นาที
     max: 20, // รองรับได้ 20 รูปภาพต่อนาที (จาก api key เดียวกัน)
+    validate: { keyGeneratorIpFallback: false },
     keyGenerator: (req: Request): string => {
         let key_api = req.headers.authorization;
 

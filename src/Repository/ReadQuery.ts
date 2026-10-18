@@ -148,7 +148,7 @@ export const get2TablePage = async (
             return { success: true, status: 200, data: res.rows };
         } catch (error) {
             console.error('❌ Database in getMqtt:', error);
-            return { success: false, status: 500, error: 'Failed to get data Mqtt' };
+            return { success: false, status: 500, error: `Failed to get data ${table1}` };
         }
     }
 // export const dynamicGetPage = async (

@@ -18,7 +18,7 @@ export const group_post_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const group_res = await GroupService.GroupWrite.post_group(
+        const group_res = await GroupService.Write.post_group(
             group_name , userId , ipAddress , userAgent
         );
         if(!group_res.success){
@@ -54,7 +54,7 @@ export const Group_update_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const group_res = await GroupService.GroupWrite.update_group(group_id , group_name , userId , ipAddress , userAgent, is_delete);
+        const group_res = await GroupService.Write.update_group(group_id , group_name , userId , ipAddress , userAgent, is_delete);
         if(!group_res.success){
             console.log(group_res);
             return res.status(group_res.status).json(group_res);

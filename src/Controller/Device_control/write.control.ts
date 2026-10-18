@@ -19,7 +19,7 @@ export const device_post_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const device_res = await DeviceService.DeviceWrite.post_device(
+        const device_res = await DeviceService.Write.post_device(
             device_name , mac , local , userId, group_id, type, ipAddress , userAgent
         );
         if(!device_res.success){
@@ -57,7 +57,7 @@ export const device_update_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const group_res = await DeviceService.DeviceWrite.update_device( device_id , device_name , device_type , group_id , ip , subnet , gate_way , last_active_at , hw_uptime , local , is_delete , status , key_api , userId , ipAddress , userAgent);
+        const group_res = await DeviceService.Write.update_device( device_id , device_name , device_type , group_id , ip , subnet , gate_way , last_active_at , hw_uptime , local , is_delete , status , key_api , userId , ipAddress , userAgent);
         if(!group_res.success){
             console.log(group_res);
             return res.status(group_res.status).json(group_res);

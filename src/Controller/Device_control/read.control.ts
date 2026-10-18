@@ -16,7 +16,7 @@ export const device_get_control = async (req:Request, res:Response) => {
         return res.status(400).json({error: 'Missing user id'});
     }
     try {
-        const group_res = await DeviceService.DeviceRead.get_deviceInfo(page , limit , userId , ipAddress , userAgent);
+        const group_res = await DeviceService.Read.get_deviceInfo(page , limit , userId , ipAddress , userAgent);
         if(!group_res.success){
             console.log(group_res);
             return res.status(group_res.status).json(group_res);

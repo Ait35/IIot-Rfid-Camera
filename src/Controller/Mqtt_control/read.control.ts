@@ -16,7 +16,7 @@ export const MGet_control = async (req:Request, res:Response) => {
         return res.status(400).json({error: 'Missing user id'});
     }
     try {
-        const mqtt_res = await MqttService.MqttRead.get_mqtt(page , limit , userId , ipAddress , userAgent);
+        const mqtt_res = await MqttService.Read.get_mqtt(page , limit , userId , ipAddress , userAgent);
         if(!mqtt_res.success){
             console.log(mqtt_res);
             return res.status(mqtt_res.status).json(mqtt_res);

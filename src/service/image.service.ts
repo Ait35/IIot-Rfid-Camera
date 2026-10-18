@@ -1,6 +1,7 @@
 import { Helper } from './Class_service.js';
 import { InsertData } from '../Repository/insertQuery.js';
 import { PoolClient } from 'pg';
+import { getData } from '../Repository/ReadQuery.js';
 
 interface Log_img { 
     log_id: string;
@@ -9,7 +10,7 @@ interface Log_img {
 }
 
 export const ImageService = {
-    async processUploadedImage(log_id: string , device_id: number , imagePath: string) {
+    async processUploadedImage(log_id: string , device_id: number , group_id: number , imagePath: string) {
         console.log('----- API action: UploadedImage service -----');
         try{
             //ส่ง ecp / log id มา เอามาเช็ค cache ถ้าไม่เจอก็เข้าไปหาใน log rfid 
@@ -19,6 +20,22 @@ export const ImageService = {
                 console.log(result);
                 return result;
             }
+            if(result.data === null){
+                console.log('ไม่พบ log_rfid ที่ต้องการส่งรูปภาพ');
+                return {success: false, status: 404, error: 'ไม่พบ log_rfid ที่ต้องการส่งรูปภาพ'};
+            }
+
+            // ดึงข้อมูลเครื่อง RFID ที่สร้าง log นี้ขึ้นมา
+            const rfidDevice = await getData("device_info", "device_id", result.data.device_id, true);
+            if (!rfidDevice.success || rfidDevice.data === null) {
+                return { success: false, status: 404, error: 'ไม่พบข้อมูลเครื่อง RFID ที่เกี่ยวข้อง' };
+            }
+            // ตรวจสอบว่าเครื่อง RFID กับ กล้องอยู่กลุ่มเดียวกันไหม
+            if (rfidDevice.data.group_id !== group_id) {
+                console.log('กล้องและเครื่อง RFID ไม่ได้อยู่กลุ่มเดียวกัน!');
+                return { success: false, status: 400, error: 'กล้องและเครื่อง RFID ไม่ได้อยู่ในกลุ่มเดียวกัน' };
+            }
+            
             const log_img : Log_img = {
                 log_id,
                 camera_device_id :device_id,

@@ -18,7 +18,7 @@ export const MPost_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const mqtt_res = await MqttService.MqttWrite.post_mqtt(topic, userId, group_id ,user_mqtt , pass_mqtt , ipAddress , userAgent);
+        const mqtt_res = await MqttService.Write.post_mqtt(topic, userId, group_id ,user_mqtt , pass_mqtt , ipAddress , userAgent);
         if(!mqtt_res.success){
             console.log(mqtt_res);
             return res.status(mqtt_res.status).json(mqtt_res);
@@ -52,7 +52,7 @@ export const Mqtt_updata_control = async (req:Request, res:Response) => {
     }
 
     try {
-        const mqtt_res = await MqttService.MqttWrite.update_mqtt(mqtt_id ,topic , userId , group_id, user_mqtt , 
+        const mqtt_res = await MqttService.Write.update_mqtt(mqtt_id ,topic , userId , group_id, user_mqtt , 
             pass_mqtt , ipAddress , userAgent, is_delete);
         if(!mqtt_res.success){
             console.log(mqtt_res);

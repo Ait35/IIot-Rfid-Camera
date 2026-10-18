@@ -8,7 +8,6 @@ const __dirname = path.dirname(__filename);
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     // ให้เซฟไปที่โฟลเดอร์ public/uploads 
-    // cd ย่อมาจาก call back แม่งทำมาค้ลาบกับ cd ที่เข้าถึง folder อีก
     cb(null, path.join(__dirname, '../../public/uploadsImg'));
   },
   filename: (req, file, cb) => {
@@ -19,4 +18,17 @@ const storage = multer.diskStorage({
   },
 });
 
-export const upload = multer({ storage });
+export const upload = multer({
+  storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // จำกัดขนาดไฟล์สูงสุด 5MB
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+    if (allowedMimeTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only JPEG and PNG are allowed.'));
+    }
+  },
+});

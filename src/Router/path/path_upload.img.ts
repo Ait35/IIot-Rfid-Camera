@@ -6,6 +6,6 @@ import { rateLimitImageUpload } from '../../Middlewares/rateLimit.Middleware.js'
 
 const path_upload_img = Router();
 
-path_upload_img.post('/iiot/pose/upload_img', rateLimitImageUpload, Auth_uploadImg, upload.single('img'), upload_img_control);
+path_upload_img.post('/iiot/post/upload_img', rateLimitImageUpload, Auth_uploadImg, upload.single('img'), upload_img_control);
 
 export default path_upload_img;

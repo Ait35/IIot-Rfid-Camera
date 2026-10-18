@@ -16,7 +16,7 @@ export const Tag_get_control = async (req:Request, res:Response) => {
         return res.status(400).json({error: 'Missing user id'});
     }
     try {
-        const mapTag_res = await MapTagService.Map_tagRead.get_tag(page , limit , userId , ipAddress , userAgent);
+        const mapTag_res = await MapTagService.Read.get_tag(page , limit , userId , ipAddress , userAgent);
         if(!mapTag_res.success){
             console.log(mapTag_res);
             return res.status(mapTag_res.status).json(mapTag_res);

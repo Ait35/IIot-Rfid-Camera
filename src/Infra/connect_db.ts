@@ -18,6 +18,11 @@ export const connect_DB = async (): Promise<Pool> => {
             database: process.env.DB_NAME,
             port: parseInt(process.env.DB_PORT || '5432'),  
         });
+
+        db.on('error', (err) => {
+            console.error('⚠️ Unexpected error on idle pg client:', err.message);
+        });
+
         const client = await db.connect();
         console.log('✅ Connected to the database successfully!');
         

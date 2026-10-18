@@ -16,7 +16,7 @@ export const Group_get_control = async (req:Request, res:Response) => {
         return res.status(400).json({error: 'Missing user id'});
     }
     try {
-        const group_res = await GroupService.GroupRead.get_group(page , limit , userId , ipAddress , userAgent);
+        const group_res = await GroupService.Read.get_group(page , limit , userId , ipAddress , userAgent);
         if(!group_res.success){
             console.log(group_res);
             return res.status(group_res.status).json(group_res);
