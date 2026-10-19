@@ -1,4 +1,4 @@
-#include "../data_include.h"
+#include "global_variables.h"
 
 void connectWiFi(String *ssid = nullptr, String *password = nullptr) {
     if (ssid != nullptr && *ssid != "") {
@@ -7,16 +7,25 @@ void connectWiFi(String *ssid = nullptr, String *password = nullptr) {
         }else {
             WiFi.begin(ssid->c_str());
         }
-        //time out 30 sec เอง
+        //time out 10 sec
+        //oled.setUp_any("WiFi", false, 0);
+        int dot = 0;
         unsigned long startAttemptTime = millis();
+        unsigned long lastDotTime = millis();
         while (WiFi.status() != WL_CONNECTED && millis() - startAttemptTime < 10000) {
-            delay(500);
+            if (millis() - lastDotTime >= 300) {
+                dot = (dot + 1) % 4;
+                //oled.setUp_any("WiFi", false, dot);
+                lastDotTime = millis();
+            }
+            delay(10);
             Serial.print(".");
-            Serial.print("5555");
         }
 
         if (WiFi.status() == WL_CONNECTED) {
-            Serial.println("\n✅ Connected to AP Success");
+            Serial.println("\n✅ Connected to Wifi Success");
+            //oled.setUp_any("WiFi", true, 0);
+            delay(500);
         } else {
             Serial.println("\n❌ Failed to connect to WiFi, restarting...");
 
@@ -25,15 +34,17 @@ void connectWiFi(String *ssid = nullptr, String *password = nullptr) {
             preferences.end();
             ESP.restart();
         }
-
-        wifiInfo.subnet = WiFi.subnetMask().toString();
-        wifiInfo.gateway = WiFi.gatewayIP().toString();
-        wifiInfo.IP = WiFi.localIP().toString();
-        wifiInfo.StartTime = gettime();
+        configTime(7*3600, 0, "pool.ntp.org");
+        //IsWedGetIP = true;
+        device_info.subnet = WiFi.subnetMask().toString();
+        device_info.gateway = WiFi.gatewayIP().toString();
+        device_info.IP = WiFi.localIP().toString();
+        WiFi.setHostname(device_info.apHostname.c_str());
+   
         Serial.print("\nConnected! IP: " + WiFi.localIP().toString());
-        Serial.println("\tSubnet: " + wifiInfo.subnet);
-        Serial.print("Gateway: " + wifiInfo.gateway);
-        Serial.println("\tStart Time: " + wifiInfo.StartTime);
+        Serial.println("\tSubnet: " + device_info.subnet);
+        Serial.print("Gateway: " + device_info.gateway);
+        Serial.println("\tHostname: " + device_info.apHostname);
     } else {
         Serial.println("not find to SSID");
     }

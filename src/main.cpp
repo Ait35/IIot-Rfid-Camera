@@ -1,150 +1,248 @@
-#include <Arduino.h>
-#include <WiFi.h>
-#include <ArduinoJson.h>
-#include "time.h"
-#include <HTTPClient.h>
-#include<PubSubClient.h>
-#include <WebServer.h>
-#include <LittleFS.h>
-#include <Preferences.h>
-#include <data_include.h>
+#include "./Secret/secret.h"
+#include "./global_variables.h"
+#include "./OTA.h"
+#include "./Helper/helper.h"
 
-#include <./Network_config/WebServerSetup.h>
-#include <./Network_config/config_network.h>
-#include <./Network_config/esp32_Ap.h>
+#include "./OLED/oled.tree.h"
+#include "./Control_panel/panel.h"
+#include "./Network_config/WebServerSetup.h"
+#include "./Network_config/config_network.h"
+#include "./Network_config/esp32_Ap.h"
 
-#include <./Mqtt_service/setup_mqtt.h>
-#include <./Mqtt_service/pub_Active.h>
+#include "./Backend/configServer.h"
+#include "./Mqtt_service/Mqtt_service.h"
+#include "./Rfid_config/rfid_config.h"
+#include <nvs_flash.h>
 
 #define rfid_RxPin 15
 #define rfid_TxPin 16
 
-String setDeviceId() {
-    String mac = WiFi.macAddress();
+using namespace Helper;
+using namespace Rfid;
+using namespace Backend;
 
-    mac.replace(":", "");
-    Serial.println("Mac Address: " + mac);
-    wifiInfo.mac = mac;
-    return  mac;
-}
+Mqtt_service mqtt;
 
-bool checkMemory_SSID_Pass(){
-    preferences.begin("wifi-creds", true);
-    wifiInfo.EEPROM_SSID = preferences.getString("ssid", "");
-    wifiInfo.EEPROM_Pass = preferences.getString("pass", "");
-    preferences.end();
-    //ดู EEprom 
-    if (wifiInfo.EEPROM_SSID.length() > 0) {
-        Serial.println("Find SSID in EEPROM: " + wifiInfo.EEPROM_SSID);
-        if(wifiInfo.EEPROM_Pass.length() > 0){
-            Serial.println("Find Password in EEPROM: " + wifiInfo.EEPROM_Pass);
-        } else {
-            Serial.println("No Password to connect WiFi");
-        }
-        return true;
+void callback(char* topic, uint8_t* payload, unsigned int length)
+{
+    Serial.print("📩 topic: ");
+    Serial.print(topic);
+
+    String message((char*)payload, length);
+
+    Serial.println("📩 message: " + message);
+    Serial.println("----------------------------------------");
+
+    JsonDocument doc;
+    DeserializationError error = deserializeJson(doc, message);
+    if (error) {
+      Serial.print("❌ JSON Parse Failed: ");
+      Serial.println(error.c_str());
+      return; // หยุดการทำงานทันทีเพื่อป้องกันบอร์ดค้าง
     }
-    return false;
+    
+    if(String(topic).endsWith("/broadcast") && doc["CMD"].as<String>() == "disconnect"){
+        Serial.println("🔴 Broadcast disconnected wait for reconnect");
+        mqtt.client.disconnect();
+        delay(500);
+        ESP.restart();
+    }else if(String(topic).endsWith("/"+ device_info.mac) && doc["CMD"].as<String>() == "disconnect"){
+        Serial.println("🔴 Disconnected wait for reconnect");
+        mqtt.client.disconnect();
+        delay(500);
+        ESP.restart();
+    }
+    else{
+        Serial.println("😴 No action");
+        Serial.println("----------------------------------------");
+    }
 }
 
 void setup() {
     Serial.begin(115200);
     Serial2.begin(115200, SERIAL_8N1, rfid_RxPin, rfid_TxPin);
-    delay(3000);
-    while (!Serial) { 
-        delay(10);
-    }
+    pinMode(BTN_UP_PIN, INPUT);
+    pinMode(BTN_DOWN_PIN, INPUT);
+    pinMode(BTN_SELECT_PIN, INPUT);
 
+    Wire.begin(SDA_PIN, SCL_PIN);
+
+    Dumy.addChild(&Root_Menu);
+    Root_Menu.addChild(&R_esp_Status);
+    Root_Menu.addChild(&R_cam_Status);
+    Root_Menu.addChild(&R_Network_Status);
+    Root_Menu.addChild(&R_MQTT_Status);
+    // Root_Menu.addChild(&R_Restart);
+    // Root_Menu.addChild(&R_Reset);
+    Root_Menu.countChoice();
+
+    R_Network_Status.addChild(&Net_WiFi_Status);
+    R_Network_Status.addChild(&Net_AP_Status);
+    R_Network_Status.countChoice();
+
+    // R_Reset.addChild(&ReSet_WiFi);
+    // R_Reset.addChild(&ReSet_API);
+    // R_Reset.addChild(&ReSet_All);
+    // R_Reset.countChoice();
+  
+    oled.begin(&Dumy);
+
+    esp_err_t err = nvs_flash_init();
+    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
+        Serial.println("NVS partition was truncated. Erasing...");
+        nvs_flash_erase();
+        err = nvs_flash_init();
+    }
+    if (err == ESP_OK) {
+        Serial.println("NVS Initialized successfully");
+  }
     if (!LittleFS.begin(true)) {
         Serial.println("An Error has occurred while mounting LittleFS");
     }
     WiFi.mode(WIFI_MODE_STA);
 
-    wifiInfo.deviceId = setDeviceId();
-    setAP(&wifiInfo.deviceId);
+    device_info.deviceName = setDeviceId();
+    setAP(&device_info.deviceName);
     server.begin();
     setupWebServer();
 
+    Serial.print("connect internet...");
     //เช็ค SSID / password in EEprom
     if(!checkMemory_SSID_Pass()) {
         Serial.println("No SSID in EEPROM, start WebServer to setup WiFi");
+        Serial.println("-------------------------------------------------");
+    }else{
+        Serial.println("Connecting to WiFi: " + device_info.EEPROM_SSID);
+        connectWiFi(&device_info.EEPROM_SSID, &device_info.EEPROM_Pass);
+        IsWedGetIP = true;
+        WiFi.softAPdisconnect(true);
     }
 
-    Serial.println("Connecting to WiFi: " + wifiInfo.EEPROM_SSID);
-    connectWiFi(&wifiInfo.EEPROM_SSID, &wifiInfo.EEPROM_Pass);
-    Serial.print("connect internet...");
-    while (WiFi.status() != WL_CONNECTED) {
+    while (!IsWedGetIP || WiFi.status() != WL_CONNECTED) {
         loopWebServer();
-        delay(500);
+        oled.Ap_status();
+        delay(10);
+    }       
+    Serial.println("Browser is " + WiFi.localIP().toString());
+
+    Serial.println("Connecting to server...");
+    Secret::key_api = checkMemory_key_api();
+    if (Secret::key_api.length() > 0) {
+        Serial.println("Connecting to server with key_api: " + Secret::key_api);
+    } else {
+        Serial.println("No key_api in EEPROM, start WebServer to setup key_api");
     }
+
+    oled.setUp_any("Server", false, 0);
+    int serverDot = 0;
+    unsigned long lastServerDot = millis();
+    ServerConnectTime = millis();
+    bool connect = Backend::connectToServer();
+    while (!connect) {
+        loopWebServer();   
+        if (WiFi.status() != WL_CONNECTED) ESP.restart();
+
+        // อัปเดตจุดกำลังโหลด Server ให้ขยับลื่นไหลทุก 300ms
+        if (millis() - lastServerDot >= 300) {
+            serverDot = (serverDot + 1) % 4;
+            //oled.setUp_any("Server", false, serverDot);
+            lastServerDot = millis();
+        }
+
+        if(millis() - ServerConnectTime > 3000){            
+            if (Backend::connectToServer()) {
+                Serial.println("✅ Connected to server");
+                connect = true;
+                break;
+            }
+            Serial.println("Failed to connect to server, retrying in 3 seconds...");
+            ServerConnectTime = millis();
+        }
+        delay(5);
+    }
+    oled.setUp_any("Server", true, 0);
+    delay(500);
     
     configTime(7*3600, 0, "pool.ntp.org");
-    client.setServer(mqtt_server, mqtt_port); //อยู่ใน inculde
+    device_info.StartTime = gettime();
+    device_info.HardWareUpTime = getUpTime(millis());
+        
+    mqtt.setupMqtt(
+        mqtt_info.userMqtt, 
+        mqtt_info.passMqtt, 
+        mqtt_info.topic_pub_status, 
+        mqtt_info.topic_pub_rfid,
+        mqtt_info.topic_sub_private,
+        mqtt_info.topic_sub_broadcats
+    );
+
+    mqtt.reconnect(&oled);
+    mqtt.client.setCallback(callback);
+    publishStatusTime = millis();
+
+    setupOTA();
+    ArduinoOTA.begin();
+
 }
 
 void loop() {
     loopWebServer();
+    mqtt.client.loop();
+    ArduinoOTA.handle();
+
     if(WiFi.status() != WL_CONNECTED){
         ESP.restart();
     }
-    if (!client.connected()) {
-      testMQTT_connect();   
+    if (!mqtt.client.connected()) {
+        mqtt.reconnect(&oled);
     }
-    client.loop();
 
-    static std::vector<uint8_t> frameBuffer;
+    oled.render();
+    panel::handleButtons();   
 
-    while (Serial2.available() > 0) {
-        uint8_t value = Serial2.read();
-        
-        if (frameBuffer.empty() && value != 0x52) continue; 
-        frameBuffer.push_back(value);
+    if (millis() - publishStatusTime > 30000) { // 30 วินาที
+        Serial.println("⚠️ Publish status to MQTT"); 
+        device_info.HardWareUpTime = getUpTime(millis());
+        Serial.println("HardWareUpTime: " + device_info.HardWareUpTime + " status: true") ;
+        mqtt.publishStatus(
+            "{\"device_id\":" + String(device_info.device_id) + 
+            ", \"mac\":\"" + device_info.mac + "\"" +
+            ", \"hw_uptime\":" + String(millis()) + 
+            ", \"free_heap\":" + String(ESP.getFreeHeap()) + 
+            ", \"rssi\":" + String(WiFi.RSSI()) + 
+            ", \"status\":true}"
+        );
+        publishStatusTime = millis(); //re
+    }
+    if(millis() - Rfid_lastTime > 3000){
+        prevRfid = "";
+        Rfid_lastTime = millis();
+    }
+    if(Rfid::readRfid()){
+        delay(500);
+        Rfid_lastTime = millis();
+        Serial.println("Read Rfid Success");
+        Rfid::chackType();
+        Rfid::parsedFrame();
+        Serial.println("-------------------------------------------------");
 
-        if (frameBuffer.size() == 28) {
-            
-            Serial.print("Data incoming: ");
-            for (uint8_t b : frameBuffer) {
-                if (b < 0x10) Serial.print("0");
-                Serial.print(b, HEX);
-                Serial.print(" ");
-            }
-            Serial.println();
-
-            // 🎯 [แก้ไขจุดนี้] เช็กตำแหน่งที่ 2 และ 5 ให้ตรงตามข้อมูลจริง
-            if (frameBuffer[2] == 0x02 && frameBuffer[5] == 0x80) {
-                
-                // แกะรหัส EPC 12 Bytes (24 ตัวอักษร) เริ่มจากตำแหน่ง byte ที่ 12
-                String currentEpc = "";
-                for (int i = 12; i < 24; i++) {
-                    if (frameBuffer[i] < 0x10) currentEpc += "0";
-                    currentEpc += String(frameBuffer[i], HEX);
-                }
-                currentEpc.toUpperCase();
-
-                if (currentEpc == "E28069950000401636C74999") {
-                    Serial.println("➔ [พบสินค้า A] : สั่งเปิดไฟสีเขียว 🟢");
-                } 
-                else if (currentEpc == "E28069950000400C84B2D120") {
-                    Serial.println("➔ [พบสินค้า B] : สั่งเปิดไฟสีแดง 🔴");
-                } 
-                else if (currentEpc == "E28069950000401636C76D99") { 
-                    Serial.println("➔ [พบสินค้า C] : สั่งเปิดไฟสีเหลือง 🟡");
-                }
-                else {
-                    Serial.printf("➔ พบแท็กใบอื่น ๆ รหัสคือ: %s\n", currentEpc.c_str());
-                }
-                testPub();
-                sendDataToAPI(currentEpc);
-            }
-            
-            frameBuffer.clear(); 
+        if(rfid_data.tag != prevRfid){
+            mqtt.publishEPC(
+                "{\"device_id\" : " +  String(device_info.device_id) + ", \"group_id\" : " + String(device_info.group_id) + ", \"epc\" : \"" + rfid_data.tag + "\", \"distance\" : " + String(rfid_data.distance) +"}"
+            );
+            prevRfid = rfid_data.tag;
+        }else{
+            Serial.println("////Tag is same////");
+            Serial.println("-------------------------------------------------");
         }
-    }
 
-    static uint32_t lastByteTime = 0;
-    if (Serial2.available() > 0) lastByteTime = millis();
-    if (!frameBuffer.empty() && (millis() - lastByteTime > 50)) {
         frameBuffer.clear();
     }
-
-    delay(1); 
+    if(!frameBuffer.empty() && (millis() - Rfid::lastByteTime > 50)){
+        frameBuffer.clear();
+        Rfid::lastByteTime = 0;
+        Serial.println("Clear FrameBuffer after No data for 50 ms");
+        Serial.println("-------------------------------------------------");
+    }
+    delay(5); 
 }

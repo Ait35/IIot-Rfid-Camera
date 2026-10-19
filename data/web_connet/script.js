@@ -1,10 +1,16 @@
-document.addEventListener("DOMContentLoaded", () => {
-    checkStatus();
 
+document.addEventListener("DOMContentLoaded", () => {
+    console.log("5555555555555")
+    checkStatus();
+    // pollIp();
     document.getElementById('btn-scan').addEventListener('click', scanNetworks);
     document.getElementById('btn-connect').addEventListener('click', connectWifi);
     document.getElementById('btn-logout').addEventListener('click', logout);
+    document.getElementById('btn-submit').addEventListener('click', connectBackend);
+    document.getElementById('btn-reApi').addEventListener('click', resetKey_Api);
 });
+
+
 
 // 1. เช็คสถานะตอนโหลดหน้าเว็บว่ามีค่าใน EEPROM หรือเชื่อมต่ออยู่แล้วหรือไม่
 function checkStatus() {
@@ -56,6 +62,24 @@ function scanNetworks() {
         });
 }
 
+function pollIp() {
+    console.log("Call get api");
+    fetch('/is_connected')
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.ip) {
+                console.log("go to " + data.ip);
+                location.replace("http://" + data.ip) 
+            } else {
+                console.log("not data");
+                setTimeout(pollIp, 1000);
+            }
+            
+        })
+}
+
+
 // 3. ส่งค่าเพื่อเชื่อมต่อ
 function connectWifi() {
     const ssid = document.getElementById('ssid').value;
@@ -81,13 +105,51 @@ function connectWifi() {
         if(response.ok) {
             statusText.innerText = "Success! ESP32 is connecting/rebooting.";
             statusText.style.color = "green";
-            // อาจจะหน่วงเวลาแล้วโหลดหน้าใหม่
-            setTimeout(() => location.reload(), 3000);
+            setTimeout(() => {pollIp(); }, 7000);
         } else {
             statusText.innerText = "Failed to send credentials.";
             statusText.style.color = "red";
         }
     });
+}
+
+function connectBackend() {
+    const key_api = document.getElementById('key_api').value;
+    const statusText = document.getElementById('connecKeytApi-status')
+
+    if(!key_api) {
+        alert("Please input key api!");
+        return;
+    }
+
+    statusText.innerText = "Connecting to server...";
+    statusText.style.color = "blue";
+
+    fetch('/connectSever', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `key_api=${encodeURIComponent(key_api)}`
+    })
+    .then(response => {
+        if(response.ok) {
+            statusText.innerText = "Success! server is connecting";
+            statusText.style.color = "green";
+            // อาจจะหน่วงเวลาแล้วโหลดหน้าใหม่
+            console.log("reload connectBackend");
+            setTimeout(() => location.reload(), 3000);
+        } else {
+            statusText.innerText = "Failed to send Key_API.";
+            statusText.style.color = "red";
+        }
+    });
+}
+
+function resetKey_Api(){
+     fetch('/resetKey_Api', { method: 'POST' })
+            .then(() => {
+                alert("key Api cleared. Please reconnect to the Server.");
+                location.reload();
+            });   
 }
 
 // 4. ลบข้อมูลออก (Logout)
@@ -97,6 +159,7 @@ function logout() {
         fetch('/logout', { method: 'POST' })
             .then(() => {
                 alert("Credentials cleared. Please reconnect to the AP.");
+                console.log("reload logout");
                 location.reload();
             });
     }

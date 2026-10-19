@@ -91,3 +91,31 @@ button#btn-scan {
     background: #dc3545;
     color: white;
 }
+/* Api key */
+.from-keyApi {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.api-btn {
+    margin-top: 5px;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 80px;
+    margin-right: 5px;
+}
+#key_api{
+    width: 100%;
+    margin-right: 5px;
+}
+
+#btn-submit{
+    background: #28a745;
+    color: white;
+}
+
+#btn-reApi{
+    background: #dc3545;
+    color: white;
+}

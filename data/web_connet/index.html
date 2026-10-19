@@ -37,6 +37,14 @@
         <div id="logout-section" class="hidden">
             <h3>Connected / Saved Network</h3>
             <p>Current SSID: <strong id="current-ssid">-</strong></p>
+
+            <p>Key_API:</p>
+            <div class="from-keyApi">
+                <input type="" id="key_api" placeholder="input key api">
+                <button id="btn-submit" class="api-btn">Submit</button>
+                <button id="btn-reApi" class="api-btn">Reset</button>
+            </div>
+            <p id="connecKeytApi-status"></p>
             <p>คลิก Logout เพื่อลบข้อมูลออกจาก EEPROM/Preferences และรีสตาร์ท</p>
             <button id="btn-logout" class="danger-btn">Logout & Clear</button>
         </div>
