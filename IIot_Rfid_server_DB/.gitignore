@@ -1,0 +1,9 @@
+.env
+node_modules/
+.vscode/
+public/uploadsImg/*
+!public/uploadsImg/dummy.txt
+scratch/
+# ดักไว้ เพราะ มันอาจจะอย่ใน ram
+dist/
+build/
