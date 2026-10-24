@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 WiFi Manager</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="container">
+        <h2>ESP32 Network Setup</h2>
+        <!-- ส่วนสำหรับตั้งค่า WiFi -->
+        <div id="setup-section" class="hidden">
+            <div class="scan-header">
+                <h3>Select Network</h3>
+                <button id="btn-scan">Scan</button>
+            </div>
+            
+            <ul id="network-list">
+                <!-- รายชื่อ WiFi จะมาแสดงตรงนี้ -->
+                <li>Loading networks...</li>
+            </ul>
+
+            <div class="form-group">
+                <label>SSID:</label>
+                <input type="text" id="ssid" readonly placeholder="Select from list">
+            </div>
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button id="btn-connect" class="primary-btn">Connect</button>
+            <p id="connect-status"></p>
+        </div>
+
+        <!-- ส่วนสำหรับ Logout (แสดงเมื่อ ESP32 จำค่าใน EEPROM/Preferences ไว้แล้ว) -->
+        <div id="logout-section" class="hidden">
+            <h3>Connected / Saved Network</h3>
+            <p>Current SSID: <strong id="current-ssid">-</strong></p>
+
+            <p>Key_API:</p>
+            <div class="from-keyApi">
+                <input type="" id="key_api" placeholder="input key api">
+                <button id="btn-submit" class="api-btn">Submit</button>
+                <button id="btn-reApi" class="api-btn">Reset</button>
+            </div>
+            <p id="connecKeytApi-status"></p>
+            <p>คลิก Logout เพื่อลบข้อมูลออกจาก EEPROM/Preferences และรีสตาร์ท</p>
+            <button id="btn-logout" class="danger-btn">Logout & Clear</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
