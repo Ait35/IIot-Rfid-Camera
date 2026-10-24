@@ -1,0 +1,9 @@
+#iiot-Edge-Frimware
+**/.pio/
+**/.vscode/
+**/.DS_Store
+**/src/Secret/
+
+#ESP32_Rfid
+iiot-Edge-Frimware/Edge_ESP32_Rfid/diagram.json
+iiot-Edge-Frimware/Edge_ESP32_Rfid/wokwi.toml
