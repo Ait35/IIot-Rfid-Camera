@@ -1,3 +1,5 @@
+name: iiot_rfid_server_db 
+# ชื่อโปรเจคเริ่มต้น และอ้างอิงไปยัง volumes อันเดิม เพราะ Volume ที่เก็บ Postgres ถูกสร้างขึ้นในชื่อ: iiot_rfid_server_db_pgdat หรือก็คือ ชื่อ Volume จริง = <ชื่อโปรเจกต์>_<ชื่อ_volume>"
 version: '3.8'
 
 services:
