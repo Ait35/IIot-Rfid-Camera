@@ -1,10 +1,15 @@
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
+import { exec } from 'child_process';
+import util from 'util';
+
 import {PoolClient} from 'pg';
 import { db } from '../Infra/connect_db.js';
 import { ActivityLogService } from '../Repository/Activity_Log/ActivityQuery.js';
 import { QueryRedis } from '../Infra/Redis/cache.js';
 import { getData } from '../Repository/ReadQuery.js';
+
+const execPromise = util.promisify(exec);
 
 export interface ITokenPayload {
     user_id: string; //ให้ สัญญาวาเป็นรูปแบบ ojb นี้แน่นอน
@@ -176,6 +181,58 @@ const Service = {
         }catch(error){
             console.error('Error occurred while checking cache or fetching data from database:', error);
             throw error
+        }
+    },
+    async pingIP(ip: string): Promise<boolean> {
+        try{
+            await execPromise(`ping -n 1 -w 1000 ${ip}`)
+            return true;
+        } catch {
+            return false;
+        }
+    },
+    async getMacFromArp(ip: string): Promise<string> {
+        try{
+            const { stdout } = await execPromise(`arp -a ${ip}`);
+            const matchIP = stdout.match(/([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})/);
+            return matchIP ? matchIP[0].replace(/[:-]/g, '').toUpperCase() : '';;
+        } catch {
+            return '';
+        }
+    },
+    async cleanUrl(url: string){
+        if(!url) return '';
+
+        try{
+            const parsed = new URL(url);
+
+            if(parsed.username){
+                parsed.username = '';
+            }
+            if(parsed.password){
+                parsed.password = '';
+            }
+
+            const chackParsed = [
+                'user',
+                'username',
+                'pwd',
+                'pass',
+                'password'
+            ].some(item => parsed.searchParams.has(item));
+                
+            if(chackParsed){
+                parsed.searchParams.delete('user');
+                parsed.searchParams.delete('username');
+                parsed.searchParams.delete('pwd');
+                parsed.searchParams.delete('pass');
+                parsed.searchParams.delete('password');
+            }
+
+            return parsed.href;
+        }catch(error){
+            console.log('Error while cleaning url:', error);
+            return url;
         }
     }
 }

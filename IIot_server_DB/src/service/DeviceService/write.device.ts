@@ -2,7 +2,7 @@
 import { Helper } from '../Class_service.js';
 import { publishMessage } from '../../Infra/Mqtt.infra.js';
 import { InsertData } from '../../Repository/insertQuery.js';
-import { updateData , updateAndGet1Table} from '../../Repository/updataQuery.js';
+import { updateAndGet1Table} from '../../Repository/updataQuery.js';
 import { getData } from '../../Repository/ReadQuery.js';
 
 interface user_req {

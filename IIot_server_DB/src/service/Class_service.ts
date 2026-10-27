@@ -9,59 +9,39 @@ import { GroupRead } from './GroupService/read_group.js';
 import { Map_tagWrite } from './MapService/write.tag.js';
 import { TagRead } from './MapService/read.tag.js';
 import { LogRead } from './LogService/read.log.js';
+import { IP_CamWrite } from './IP_CamService/write.service.js';
+import { IP_CamRead } from './IP_CamService/read.service.js';
 
 export const Helper = {
     Service : Service,
     Query : Query
 };
 
-export const  MqttService = {
+export const MqttService = {
     Write : MqttWrite,
     Read : MqttRead
-}
-// export const  MqttQuery = {
-//     QueryWrite : 
-//     {
-//         insertMqtt , 
-//         updateMqtt
-//     },
-//     QueryRead: 
-//     {
-//         getMqtt
-//     }
-// }
+};
 
-export const  GroupService = {
+export const GroupService = {
     Write : GroupWrite,
     Read : GroupRead
-}
-// export const  GroupQuery = {
-//     QueryWrite : 
-//     {
-//         insertGroup,
-//         // updateGroup
-//     },
-//     // QueryRead: 
-//     // {
-//     //     getMqtt
-//     // }
-// }
+};
 
-export const  DeviceService = {
+export const DeviceService = {
     Write : DeviceWrite,
     Read : DeviceRead
-}
-// export const  DeviceQuery = {
-//     QueryWrite : 
-//     {
-//         insertDevice
-//     }
-// }
-export const  MapTagService = {
+};
+
+export const MapTagService = {
     Write : Map_tagWrite,
     Read : TagRead
-}
+};
 
-export const  LogService = {
+export const LogService = {
     Read : LogRead
-}
+};
+
+export const IP_CamService = {
+    Write : IP_CamWrite,
+    Read : IP_CamRead
+};

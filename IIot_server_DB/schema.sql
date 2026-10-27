@@ -1,8 +1,9 @@
-DROP TABLE IF EXISTS Activity_Log CASCADE;
+﻿DROP TABLE IF EXISTS Activity_Log CASCADE;
 DROP TABLE IF EXISTS Log_Images CASCADE;
 DROP TABLE IF EXISTS Log_Rfid CASCADE;
 DROP TABLE IF EXISTS MQTT CASCADE;
 DROP TABLE IF EXISTS Map_tag CASCADE;
+DROP TABLE IF EXISTS IP_camera CASCADE;
 DROP TABLE IF EXISTS Device_info CASCADE;
 DROP TABLE IF EXISTS Device_Group CASCADE;
 DROP TABLE IF EXISTS Users CASCADE;
@@ -59,6 +60,37 @@ CREATE TABLE Device_info (
         REFERENCES Users(User_id)
 );
 
+CREATE TABLE IP_camera (
+    IP_cam_id    INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+    cam_name     VARCHAR(100) NOT NULL,      
+    mac          VARCHAR(17) NOT NULL UNIQUE,
+    Group_id     INT NOT NULL,               
+    By_user_id   INT NOT NULL,
+    ip           VARCHAR(45) NOT NULL, 
+    ONVIF_url    VARCHAR(255),              
+    rtsp_url     VARCHAR(255),               -- สตรีมสด เช่น 'rtsp://admin:123456@192.168.1.50:554/stream1'
+    snapshot_url VARCHAR(255),               -- ถ่ายภาพนิ่ง เช่น 'http://192.168.1.50/cgi-bin/snapshot.cgi'
+    cam_username VARCHAR(100),
+    cam_password VARCHAR(100),
+    local        VARCHAR(255),               
+    status       BOOLEAN DEFAULT FALSE,     
+    up_time      INT NOT NULL DEFAULT 0,     
+    last_active_at TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
+    created_at   TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
+    is_delete    BOOLEAN DEFAULT FALSE,
+    
+    CONSTRAINT fk_ip_cam_group
+        FOREIGN KEY (Group_id)
+        REFERENCES Device_Group(Group_id) ON DELETE CASCADE,
+    
+    CONSTRAINT fk_ip_cam_user
+        FOREIGN KEY (By_user_id)
+        REFERENCES Users(User_id)
+);
+
+CREATE INDEX idx_ip_cam_group ON IP_camera(Group_id);
+
+
 CREATE TABLE MQTT (
     Mqtt_id      INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     By_user_id   INT NOT NULL ,
@@ -111,7 +143,7 @@ CREATE TABLE Log_Rfid (
 CREATE TABLE Log_Images (
     Image_id         INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     Log_id           INT NOT NULL,               
-    Camera_device_id INT NOT NULL,              
+    IP_cam_id        INT NOT NULL,              
     image_path       VARCHAR(500) NOT NULL,     
     created_at       TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
 
@@ -121,8 +153,9 @@ CREATE TABLE Log_Images (
         ON DELETE CASCADE,
 
     CONSTRAINT fk_image_camera
-        FOREIGN KEY (Camera_device_id)
-        REFERENCES Device_info(Device_id)
+        FOREIGN KEY (IP_cam_id)
+        REFERENCES IP_camera(IP_cam_id)
+        ON DELETE CASCADE
 );
 
 CREATE TABLE Activity_Log (

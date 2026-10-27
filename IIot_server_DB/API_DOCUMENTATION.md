@@ -1,4 +1,4 @@
-# IIoT RFID & Camera Server - System Documentation Hub
+﻿# IIoT RFID & Camera Server - System Documentation Hub
 
 เอกสารระบบศูนย์กลางสำหรับ Backend Server, ระบบ MQTT Broker, ฮาร์ดแวร์ IoT (ESP32 RFID & Camera) และ Web Frontend Dashboard
 
@@ -38,6 +38,7 @@
 - `GET /iiot/get/dashboard` — สรุปสถิติระบบและ 10 สแกนล่าสุด
 - `GET /iiot/get/log` — ประวัติการสแกนบัตร RFID พร้อม `image_path`
 - `GET /iiot/get/device` — รายชื่ออุปกรณ์ RFID / CAM
+- `GET /iiot/get/ip_cam` — รายชื่อกล้อง IP Camera ประจำกลุ่ม
 - `GET /iiot/get/group` — รายชื่อกลุ่มอุปกรณ์
 - `GET /iiot/get/mqtt` — รายชื่อการตั้งค่า MQTT ประจำกลุ่ม
 - `GET /iiot/get/tag` — รายการแท็ก RFID ในระบบ
@@ -52,11 +53,13 @@
 - `POST /iiot/post/req_connect` — อุปกรณ์ IoT ส่ง MAC + Key เพื่อ Handshake รับ Config MQTT
 - `POST /iiot/post/mqtt` — บันทึกการตั้งค่า Broker/Topic ประจำกลุ่ม
 - `POST /iiot/post/upload_img` — กล้อง ESP32-S3 อัปโหลดภาพหลักฐาน (Multipart Form-Data)
+- `POST /iiot/post/ip_cam` — ลงทะเบียนกล้อง IP Camera (RTSP / ONVIF / Snapshot พร้อม Zod Validation)
 
 ### 🟠 เมธอด PATCH
 - `PATCH /iiot/patch/account` — แก้ไขสิทธิ์ (Role), รหัสผ่าน, หรือระงับบัญชีผู้ใช้
 - `PATCH /iiot/patch/group` — แก้ไขชื่อกลุ่มอุปกรณ์ หรือ Soft Delete / Restore
 - `PATCH /iiot/patch/device` — แก้ไขข้อมูลอุปกรณ์ IoT (พร้อมเตือน MQTT disconnect)
+- `PATCH /iiot/patch/ip_cam` — แก้ไขข้อมูลกล้อง IP Camera หรือ Soft Delete / Restore (พร้อม Zod Validation)
 - `PATCH /iiot/patch/mqtt` — แก้ไขการตั้งค่า MQTT Broker/Topic ประจำกลุ่ม (Broadcast disconnect)
 - `PATCH /iiot/patch/tag` — ผูกป้ายชื่อบัตรแท็ก, เปลี่ยนสถานะ (`active`, `pending`, `stolen`) หรือลบแท็ก
 

@@ -1,4 +1,4 @@
-# IIoT RFID & Camera Server - API Documentation (GET Endpoints & Assets)
+﻿# IIoT RFID & Camera Server - API Documentation (GET Endpoints & Assets)
 
 เอกสารข้อมูลสเปกการเชื่อมต่อ Web API (เฉพาะเมธอด **GET**) และการดึงไฟล์ภาพ (Static Assets) ของระบบ Backend Server สำหรับเชื่อมต่อกับ Web Frontend Dashboard
 
@@ -286,7 +286,57 @@
 
 ---
 
-## 7. การดึงไฟล์รูปภาพจาก Server ไปแสดงผลที่ Dashboard
+## 7. Get IP Cameras (ดึงรายชื่อกล้อง IP Camera ประจำกลุ่ม)
+ดึงรายการกล้อง IP Camera ทั้งหมดในระบบ (พร้อมข้อมูล RTSP, Snapshot, LAN IP และชื่อผู้ลงทะเบียน) แบบแบ่งหน้า (Pagination)
+
+- **Endpoint**: GET /iiot/get/ip_cam
+- **Authentication**: Bearer <JWT_TOKEN>
+- **Query Parameters**:
+  | Parameter | Type | Default | Description |
+  |---|---|---|---|
+  | page | integer | 1 | หน้าที่ต้องการดึงข้อมูล |
+  | limit | integer | 10 | จำนวนรายการต่อหน้า |
+
+- **Request Example**:
+  `http
+  GET /iiot/get/ip_cam?page=1&limit=10 HTTP/1.1
+  Authorization: Bearer <TOKEN>
+  `
+
+- **Response (200 OK)**:
+  `json
+  {
+    "success": true,
+    "status": 200,
+    "data": [
+      {
+        "ip_cam_id": 1,
+        "cam_name": "C7816WIP_Entrance_Gate1",
+        "mac": "00E04C123456",
+        "group_id": 1,
+        "by_user_id": 3,
+        "ip": "192.168.1.150",
+        "onvif_url": "http://192.168.1.150:80/onvif/device_service",
+        "status_url": null,
+        "rtsp_url": "rtsp://admin:888888@192.168.1.150:554/tcp/av0_0",
+        "snapshot_url": "http://192.168.1.150/get_snapshot.cgi?user=admin&pwd=888888",
+        "cam_username": "admin",
+        "cam_password": "password888888",
+        "local": "Building 11 Front Gate",
+        "status": false,
+        "up_time": 0,
+        "last_active_at": "2026-10-26T14:55:23.000Z",
+        "created_at": "2026-10-26T14:55:23.000Z",
+        "is_delete": false,
+        "by_user_name": "Gemini"
+      }
+    ]
+  }
+  `
+
+---
+
+## 8. การดึงไฟล์รูปภาพจาก Server ไปแสดงผลที่ Dashboard
 
 ### 🖼️ Endpoint ให้บริการรูปภาพ (Static Asset Serving)
 Backend ให้บริการไฟล์รูปภาพผ่านเส้นทาง `/uploads/...` ซึ่งชี้ตรงไปยังโฟลเดอร์ `public/uploadsImg/` บน Server

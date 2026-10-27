@@ -393,3 +393,112 @@
     ```json
     { "success": false, "status": 404, "error": "ไม่พบ log_rfid ที่ต้องการส่งรูปภาพ" }
     ```
+
+
+---
+
+## 9. Add IP Camera (ลงทะเบียนกล้อง IP Camera ประจำกลุ่ม)
+ใช้สำหรับลงทะเบียนกล้อง IP Camera (RTSP / ONVIF / Snapshot) ประจำกลุ่มประตู/พื้นที่ พร้อมตรวจสอบความถูกต้องของข้อมูลผ่าน Zod Validation และมีระบบค้นหา MAC Address และ Stream URL อัตโนมัติผ่าน ONVIF / ARP Fallback
+
+- **Endpoint**: `POST /iiot/post/ip_cam`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Headers**:
+  ```http
+  Content-Type: application/json
+  Authorization: Bearer <TOKEN>
+  ```
+- **Request Body (JSON)**:
+  | Field | Type | Required | Description |
+  |---|---|---|---|
+  | `cam_name` | string | ✅ | ชื่อเรียกกล้อง (ขั้นต่ำ 2 ตัวอักษร) เช่น `"CAM_ENTRANCE_01"` |
+  | `mac` | string | ⚠️ เงื่อนไข | MAC Address ของกล้อง (ต้องระบุ `mac` หรือ `ONVIF_url` อย่างใดอย่างหนึ่ง) |
+  | `group_id` | number | ✅ | รหัสกลุ่มประตู/พื้นที่ที่กล้องติดตั้งอยู่ร่วมกับ RFID |
+  | `local` | string | ✅ | สถานที่ติดตั้ง เช่น `"Building 11 Floor 1 Front Gate"` |
+  | `ip` | string | ✅ | IP Address ของกล้องในวง LAN เช่น `"192.168.1.37"` |
+  | `ONVIF_url` | string | ⚠️ เงื่อนไข | URL บริการ ONVIF เช่น `"http://192.168.1.37:10080/onvif/device_service"` |
+  | `rtsp_url` | string | ❌ | URL สตรีมสด RTSP (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
+  | `snapshot_url` | string | ❌ | URL ดึงภาพนิ่งตอนแตะบัตร (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
+  | `status_url` | string | ❌ | URL ดึงข้อมูลระบบ/Uptime ของกล้อง |
+  | `cam_username` | string | ❌ | Username ประจำกล้องสำหรับ Authentication เช่น `"admin"` |
+  | `cam_password` | string | ❌ | Password ประจำกล้อง เช่น `"888888"` |
+
+> ⚙️ **กลไกการสืบค้นข้อมูลอัตโนมัติ (Auto-Discovery & Fallback):**
+> 1. หากผู้ใช้ **ไม่ระบุ `mac` แต่ระบุ `ONVIF_url`**:
+>    - ระบบจะส่งคำขอไปยัง ONVIF Service ของกล้อง โดยใช้ `cam_username` และ `cam_password` ที่ระบุใน Body
+>    - ดึง `rtsp_url` และ `snapshot_url` มาใส่ให้อัตโนมัติ
+>    - ดึงค่า `mac` จากคำสั่ง `GetNetworkInterfaces` ของ ONVIF
+>    - หาก ONVIF ไม่ส่ง MAC คืนมา ระบบจะ Fallback อัตโนมัติด้วยการ **Ping IP และดึง MAC จาก ARP Table ของเซิร์ฟเวอร์**
+> 2. **ความปลอดภัยของ Credentials:**
+>    - ต้องกรอก `cam_username` และ `cam_password` ผ่านช่องฟิลด์ใน Request Body โดยตรง
+>    - ระบบมีระบบ `cleanUrl` ล้าง User/Password หรือ Query Params แปลกปลอมที่แอบฝังมาในสตริง URL ทิ้งทั้งหมด เพื่อรักษาความปลอดภัย
+
+  *ตัวอย่าง Body แบบที่ 1: ระบุข้อมูลครบถ้วน:*
+  ```json
+  {
+    "cam_name": "C7816WIP_Entrance_Gate1",
+    "mac": "7A882B014614",
+    "group_id": 1,
+    "local": "Building 11 Front Gate",
+    "ip": "192.168.1.37",
+    "rtsp_url": "rtsp://192.168.1.37:10554/udp/av0_0",
+    "snapshot_url": "http://192.168.1.37:10080/onvif/device_service",
+    "ONVIF_url": "http://192.168.1.37:10080/onvif/device_service",
+    "cam_username": "admin",
+    "cam_password": "password888888"
+  }
+  ```
+
+  *ตัวอย่าง Body แบบที่ 2: ไม่ระบุ MAC ให้ระบบ Auto-Probe ผ่าน ONVIF + ARP:*
+  ```json
+  {
+    "cam_name": "VStarcam_Room901",
+    "group_id": 1,
+    "local": "Room 901",
+    "ip": "192.168.1.37",
+    "ONVIF_url": "http://192.168.1.37:10080/onvif/device_service",
+    "cam_username": "admin",
+    "cam_password": "888888"
+  }
+  ```
+
+- **Response**:
+  - **`200 OK` (สำเร็จ)**:
+    ```json
+    {
+      "success": true,
+      "status": 200,
+      "data": {
+        "ip_cam_id": 1,
+        "cam_name": "C7816WIP_Entrance_Gate1",
+        "mac": "00E04C123456",
+        "group_id": 1,
+        "by_user_id": 3,
+        "ip": "192.168.1.150",
+        "onvif_url": "http://192.168.1.150:80/onvif/device_service",
+        "status_url": null,
+        "rtsp_url": "rtsp://admin:888888@192.168.1.150:554/tcp/av0_0",
+        "snapshot_url": "http://192.168.1.150/get_snapshot.cgi?user=admin&pwd=888888",
+        "cam_username": "admin",
+        "cam_password": "password888888",
+        "local": "Building 11 Front Gate",
+        "status": false,
+        "up_time": 0,
+        "last_active_at": "2026-10-26T14:55:23.000Z",
+        "created_at": "2026-10-26T14:55:23.000Z",
+        "is_delete": false
+      }
+    }
+    ```
+  - **`400 Bad Request` (ข้อมูลไม่ครบ / ผิดสเปก Zod)**:
+    ```json
+    {
+      "success": false,
+      "status": 400,
+      "error": "Validation Error",
+      "details": [
+        { "field": "cam_name", "message": "ชื่อกล้องต้องมีความยาวอย่างน้อย 2 ตัวอักษร" },
+        { "field": "mac", "message": "รูปแบบ MAC Address ไม่ถูกต้อง (ตัวอย่าง: '246F28ABCDEF' หรือ '24:6F:28:AB:CD:EF')" },
+        { "field": "ip", "message": "รูปแบบ IP Address ไม่ถูกต้อง" }
+      ]
+    }
+    ```

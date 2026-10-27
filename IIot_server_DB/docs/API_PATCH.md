@@ -252,3 +252,82 @@ Content-Type: application/json
     }
   }
   ```
+
+
+---
+
+## 6. Update IP Camera (แก้ไขข้อมูล / Soft Delete กล้อง IP Camera)
+ใช้สำหรับอัปเดตการตั้งค่ากล้อง IP Camera ประจำกลุ่มประตู (เช่น เปลี่ยนชื่อ, เปลี่ยน IP, อัปเดต URL สตรีม หรือระงับการใช้งานผ่าน `is_delete`) โดยมี Zod ตรวจสอบ `ip_cam_id` เสมอ และต้องมีอย่างน้อย 1 ฟิลด์ที่ต้องการแก้ไข
+
+- **Endpoint**: `PATCH /iiot/patch/ip_cam`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Headers**:
+  ```http
+  Content-Type: application/json
+  Authorization: Bearer <TOKEN>
+  ```
+- **Request Body (JSON)**:
+  | Field | Type | Required | Description |
+  |---|---|---|---|
+  | `ip_cam_id` | number | ✅ | ID ของกล้อง IP Camera ที่ต้องการแก้ไข |
+  | `cam_name` | string | ❌ | ชื่อเรียกกล้องใหม่ |
+  | `group_id` | number | ❌ | ย้ายกลุ่มประตู |
+  | `ip` | string | ❌ | IP Address ใหม่ |
+  | `rtsp_url` | string | ❌ | URL สตรีมสดใหม่ |
+  | `snapshot_url` | string | ❌ | URL ดึงภาพนิ่งใหม่ |
+  | `ONVIF_url` | string | ❌ | URL ONVIF ใหม่ |
+  | `status_url` | string | ❌ | URL ดึงสถานะใหม่ |
+  | `cam_username` | string | ❌ | Username ใหม่ |
+  | `cam_password` | string | ❌ | Password ใหม่ |
+  | `local` | string | ❌ | สถานที่ติดตั้งใหม่ |
+  | `status` | boolean | ❌ | สถานะ Online/Offline (`true`/`false`) |
+  | `is_delete` | boolean | ❌ | Soft Delete (`true` = ลบกล้อง, `false` = กู้คืนกล้อง) |
+
+  *ตัวอย่าง Body (อัปเดตสถานที่และชื่อกล้อง):*
+  ```json
+  {
+    "ip_cam_id": 1,
+    "cam_name": "C7816WIP_Updated_Name",
+    "local": "Building 11 Floor 3 North Gate"
+  }
+  ```
+
+- **Response**:
+  - **`200 OK` (สำเร็จ)**:
+    ```json
+    {
+      "success": true,
+      "status": 200,
+      "data": {
+        "ip_cam_id": 1,
+        "cam_name": "C7816WIP_Updated_Name",
+        "mac": "00E04C123456",
+        "group_id": 1,
+        "by_user_id": 3,
+        "ip": "192.168.1.150",
+        "onvif_url": "http://192.168.1.150:80/onvif/device_service",
+        "status_url": null,
+        "rtsp_url": "rtsp://admin:888888@192.168.1.150:554/tcp/av0_0",
+        "snapshot_url": "http://192.168.1.150/get_snapshot.cgi?user=admin&pwd=888888",
+        "cam_username": "admin",
+        "cam_password": "password888888",
+        "local": "Building 11 Floor 3 North Gate",
+        "status": false,
+        "up_time": 0,
+        "last_active_at": "2026-10-26T14:55:23.000Z",
+        "created_at": "2026-10-26T14:55:23.000Z",
+        "is_delete": false
+      }
+    }
+    ```
+  - **`400 Bad Request` (ลืมส่ง ip_cam_id หรือไม่มีฟิลด์ให้อัปเดต)**:
+    ```json
+    {
+      "success": false,
+      "status": 400,
+      "error": "Validation Error",
+      "details": [
+        { "field": "ip_cam_id", "message": "กรุณาระบุ ip_cam_id เป็นตัวเลข" }
+      ]
+    }
+    ```

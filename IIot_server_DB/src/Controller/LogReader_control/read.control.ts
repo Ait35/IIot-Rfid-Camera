@@ -1,7 +1,7 @@
 import { Response , Request} from 'express';
 import { LogService } from '../../service/Class_service.js';
 
-export const Tag_get_control = async (req:Request, res:Response) => {
+export const Log_get_control  = async (req:Request, res:Response) => {
     console.log('----- API action: get log control -----');
     const userId = (req as any).payload?.user_id;
     // ดักจับค่า falsy แล้วตั้งตามค่าขวา
@@ -28,5 +28,3 @@ export const Tag_get_control = async (req:Request, res:Response) => {
         res.status(500).json({ error: 'error in Log control' });
     }
 };
-
-export const Log_get_control = Tag_get_control;
