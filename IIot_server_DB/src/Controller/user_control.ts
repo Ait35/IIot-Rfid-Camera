@@ -1,57 +1,46 @@
-import { Response , Request} from 'express';
+import { Response, Request } from 'express';
 import { SigninService } from '../service/AccoutService/sigin_source.js';
 import { LoginService } from '../service/AccoutService/login_source.js';
+import { LogoutService } from '../service/AccoutService/logout_source.js';
+import { update_acc } from '../service/AccoutService/update.acc.js';
+import { LoginInput, SigninInput, UpdateAccountInput } from '../schemas/auth.schema.js';
 
-export const Signin_control = async (req:Request, res:Response) => {
-    console.log('----- API action: user control -----');
+export const Signin_control = async (req: Request, res: Response) => {
+    console.log('----- API action: user signin control -----');
     try {
-        //กรอก data จาก wed ครบเปล่า
-        const { university_id , password } = req.body;
+        const inputData: SigninInput = req.body;
         const ipAddress = req.ip || 'Unknown IP';
         const userAgent = req.headers['user-agent'] || 'Unknown Device';
 
-        if(!university_id || !password){
-            console.log('missing university id or password');
-            return res.status(400).json({error: 'Missing university id or password'});
-        }
+        const sigin_res = await SigninService.signin(inputData, ipAddress, userAgent);
 
-        //เรียก service
-        const sigin_res = await SigninService.signin(university_id, password , ipAddress, userAgent); //return Json
-
-        if(!sigin_res.success){
-            console.log('error in sigin service :' , sigin_res);
-            console.log(`❌ Sigin failed`);
+        if (!sigin_res.success) {
+            console.log('error in signin service :', sigin_res);
+            console.log(`❌ Signin failed`);
             return res.status(sigin_res.status).json(sigin_res);
         }
 
-        console.log('✅ Sigin success');
+        console.log('✅ Signin success');
         res.status(200).json(sigin_res);
     } catch (error) {
-        console.error('error in user control');
+        console.error('error in user control:', error);
         res.status(500).json({ error: 'error in user control' });
     } finally {
-      console.log(`============================================`);
+        console.log(`============================================`);
     }
 };
 
-export const Login_control = async (req:Request, res:Response) => {
-    console.log('----- API action: user control -----');
+export const Login_control = async (req: Request, res: Response) => {
+    console.log('----- API action: user login control -----');
     try {
-        //กรอก data จาก wed ครบเปล่า
-        const { university_id , password } = req.body;
+        const inputData: LoginInput = req.body;
         const ipAddress = req.ip || 'Unknown IP';
         const userAgent = req.headers['user-agent'] || 'Unknown Device';
 
-        if(!university_id || !password){
-            console.log('missing university id or password');
-            return res.status(400).json({error: 'Missing university id or password'});
-        }
+        const login_res = await LoginService.login(inputData, ipAddress, userAgent);
 
-        //เรียก service
-        const login_res = await LoginService.login(university_id, password, ipAddress, userAgent); //return Json
-
-        if(!login_res.success){
-            console.log('error in sigin service :' , login_res);
+        if (!login_res.success) {
+            console.log('error in login service :', login_res);
             console.log(`❌ Login failed`);
             return res.status(login_res.status).json(login_res);
         }
@@ -59,15 +48,12 @@ export const Login_control = async (req:Request, res:Response) => {
         console.log('✅ Login success');
         res.status(200).json(login_res);
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error});
+        console.error('error in login control:', error);
+        res.status(500).json({ error: 'error in login control' });
     } finally {
         console.log(`============================================`);
     }
 };
-
-import { LogoutService } from '../service/AccoutService/logout_source.js';
-import { update_acc } from '../service/AccoutService/update.acc.js';
 
 export const Logout_control = async (req: Request, res: Response) => {
     console.log('----- API action: logout control -----');
@@ -78,7 +64,7 @@ export const Logout_control = async (req: Request, res: Response) => {
 
         if (!userId) {
             console.log('missing user_id in payload');
-            return res.status(400).json({ error: 'Missing user authentication' });
+            return res.status(401).json({ success: false, status: 401, error: 'Unauthorized: Missing user authentication' });
         }
 
         const logout_res = await LogoutService.logout(String(userId), ipAddress, userAgent);
@@ -103,26 +89,16 @@ export const update_acc_control = async (req: Request, res: Response) => {
     console.log('----- API action: update_acc control -----');
     try {
         const userId = (req as any).payload?.user_id;
-        const { password , role , is_delete } = req.body;
         const ipAddress = req.ip || req.socket.remoteAddress || 'Unknown IP';
         const userAgent = (req.headers['user-agent'] as string) || 'Unknown Device';
 
         if (!userId) {
             console.log('missing user_id in payload');
-            return res.status(401).json({ error: 'Missing user authentication' });
-        }
-        if (!password && !role && is_delete === undefined) {
-            console.log('missing password or is_delete in payload');
-            return res.status(400).json({ error: 'Missing password or is_delete' });
+            return res.status(401).json({ success: false, status: 401, error: 'Unauthorized: Missing user authentication' });
         }
 
-        const whitelist = ['admin', 'dev', 'student' , 'teacher'];
-        if(role !== undefined && !whitelist.includes(role)){
-            console.log('ไม่อยู่ในรายการที่อนุญาตให้เปลี่ยนไปใช้งาน');
-            return res.status(400).json({ error: 'ไม่อยู่ในรายการที่อนุญาตให้เปลี่ยนไปใช้งาน' });
-        }
-
-        const update_res = await update_acc(Number(userId), password, role, ipAddress, userAgent, is_delete);
+        const inputData: UpdateAccountInput = req.body;
+        const update_res = await update_acc(inputData, Number(userId), ipAddress, userAgent);
 
         if (!update_res.success) {
             console.log('error in update_acc service:', update_res);
