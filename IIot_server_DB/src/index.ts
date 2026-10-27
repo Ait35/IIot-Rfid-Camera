@@ -11,6 +11,55 @@ import Router from './Router/Export_router.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
+import { IP_CamService } from "./service/Class_service.js"
+import { getData } from "./Repository/ReadQuery.js"
+
+async function startServer() {
+  try {
+    await connect_DB();
+    console.log('--- Database Connected ---');
+
+    await redis.connect();
+    console.log('✅ Connected to Redis');
+
+    await initMqtt.connect();
+
+    initMqtt.callbackMessage(dispatch_message);
+
+  } catch (error) {
+    console.error('😵 Error starting the server:', error);
+    process.exit(1); 
+  }
+}
+let totalGroup = 0;
+let indexGroup = 0;
+let listGroup = [] as number[] //กันเจอ soft delete
+// export const global = {
+//   totalGroup : 0,
+//   indexGroup : 0,
+//   listGroup : [] as number[] //กันเจอ soft delete
+// };
+
+export const updataTatalGroup = async(transaction? : any) => {
+    const result = transaction? 
+      await getData("device_group" , "is_delete" , false , false , transaction , "group_id ASC"):
+      await getData("device_group" , "is_delete" , false , false , null , "group_id ASC")
+
+    if(result.success && result.data){
+      //ตรวจว่าเป็น array ไหม ถ้าไม่ใช่ กรณีมีข้อมูล 1 ตัว ก้จับมันใส่ [result.data] ซะ กล่ยเป็น array
+      const rows = Array.isArray(result.data) ? result.data : [result.data];
+      totalGroup = rows.length;
+      
+      // เคลียร์และสร้าง listGroup ใหม่ ไม่ให้ข้อมูลเก่าเบิ้ลซ้ำ
+      listGroup = rows.map((item: any) => +(item.group_id));
+    }else{
+      totalGroup = 0;
+      listGroup = [];
+    }
+    console.log ("maxGroup : " , totalGroup)
+    console.log("active listGroup :", listGroup);
+}
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -34,26 +83,26 @@ app.use((req, res, next) => {
 
 app.use(Router);
 
-async function startServer() {
-  try {
-    await connect_DB();
-    console.log('--- Database Connected ---');
+await startServer();
 
-    await redis.connect();
-    console.log('✅ Connected to Redis');
+app.listen(process.env.PORT, () => {
+  console.log('--- Server is running on port', process.env.PORT, '---');
+});
+console.log("==============================================");
 
-    await initMqtt.connect();
-
-    initMqtt.callbackMessage(dispatch_message);
-
-    app.listen(process.env.PORT, () => {
-      console.log('--- Server is running on port', process.env.PORT, '---');
-    });
-
-  } catch (error) {
-    console.error('😵 Error starting the server:', error);
-    process.exit(1); 
+await updataTatalGroup()
+//console.log(listGroup)
+setInterval(async () =>{
+  if(totalGroup <= 0){
+    return;
   }
-}
+  if(indexGroup >= totalGroup){
+    indexGroup = 0 ;
+  }
+  const start = Date.now();
+  const res = await IP_CamService.Process.checkCameraAlive(listGroup[indexGroup] as number)
+  indexGroup++;
+ // console.log("==============================================");
+  console.log(`⏱️ [KeepAlive] - ${Date.now() - start}ms (Status: ${(res as any)?.status})`)
 
-startServer();
+} , 30000)

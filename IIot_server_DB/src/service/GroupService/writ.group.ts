@@ -2,6 +2,7 @@ import { Helper } from '../Class_service.js';
 import { InsertData } from '../../Repository/insertQuery.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { CreateGroupInput, UpdateGroupInput } from '../../schemas/group.schema.js';
+import { updataTatalGroup } from '../../index.js';
 
 export const GroupWrite = {
     async post_group(inputData: CreateGroupInput, by_user_id: string, ip_address: string, userAgent: string) {
@@ -15,7 +16,7 @@ export const GroupWrite = {
             'post_device group', 'device_group', 'INSERT', by_user_id,
             async (transaction) => {
                 const res_query = await InsertData('device_group', req, transaction);
-                
+                await updataTatalGroup(transaction);
                 return {
                     result: res_query,
                     recordId: res_query.data.group_id, // ส่ง ID กลับไปให้ Helper ทำ Log
@@ -37,6 +38,7 @@ export const GroupWrite = {
 
                 if (is_delete !== undefined) {
                     result = await Helper.Query.Tran_SetDelete('device_group', 'group_id', group_id, is_delete, transaction);
+                    await updataTatalGroup(transaction);
                 } else {
                     result = await updateData('device_group', 'group_id', group_id, true, updatePayload, transaction);
                 }

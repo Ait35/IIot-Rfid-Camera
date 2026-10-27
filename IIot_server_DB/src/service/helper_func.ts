@@ -234,7 +234,38 @@ const Service = {
             console.log('Error while cleaning url:', error);
             return url;
         }
+    },
+    getCameraPort(rtsp_url?: string, onvif_url?: string , snapshot_url?: string): number {
+        let defaultPort = 554;
+
+        if (rtsp_url) {
+            const match = rtsp_url.match(/:(\d+)(?=[/?#]|$)/); 
+            if(match){
+                return Number(match[1]) 
+            }else{
+                defaultPort = 554;
+            } 
+        }
+        if (onvif_url) {
+            const match = onvif_url.match(/:(\d+)(?=[/?#]|$)/); 
+            if(match){
+                return Number(match[1]) 
+            }else{
+                defaultPort = 80;
+            } 
+        } 
+        if (snapshot_url) {
+            const match = snapshot_url.match(/:(\d+)(?=[/?#]|$)/); 
+            if(match){
+                return Number(match[1]) 
+            }else{
+                defaultPort = 81;
+            }  
+        }
+        
+        return 554;
     }
+  
 }
 
 export default Service;

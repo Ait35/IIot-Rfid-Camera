@@ -1,5 +1,6 @@
 import { PoolClient } from 'pg';
 import { db } from '../Infra/connect_db.js';
+import { map, number } from 'zod';
 
 export const getPage = async (
     tableName:string ,
@@ -49,11 +50,12 @@ export const getPage = async (
 export const getData = async (
     tableName:string , 
     where : string , 
-    value:string | number ,
+    value:string | number | boolean ,
     has_is_delete:boolean , 
-    transaction?: PoolClient) => 
+    transaction?: PoolClient | null,
+    order? : string | null) => 
     {
-        console.log('----- API action: getDataOne  -----');
+        console.log('----- API action: getData  -----');
 
         if (!db) {
             return { success: false, status: 500, error: 'Database not connected' };
@@ -68,9 +70,13 @@ export const getData = async (
 
         let sql : string;
         
-        if(has_is_delete){
+        if(has_is_delete && !order){
             sql = `SELECT * FROM ${tableName} WHERE ${where} = $1 AND is_delete = FALSE;`;
-        } else {
+        }else if(!has_is_delete && order){
+            sql = `SELECT * FROM ${tableName} WHERE ${where} = $1 ORDER BY ${order};`;
+        }else if(has_is_delete && order) {
+            sql = `SELECT * FROM ${tableName} WHERE ${where} = $1 AND is_delete = FALSE ORDER BY ${order};`;
+        }else {
             sql = `SELECT * FROM ${tableName} WHERE ${where} = $1;`;
         }
         try { 
@@ -80,12 +86,105 @@ export const getData = async (
                 return { success: true, status: 404, data: null };
             }
             console.log('---- Get Successful! -----');
-            return { success: true, status: 200, data: result.rows[0] };
+
+            if(result.rowCount != null && result.rowCount > 1 ){
+                return { success: true, status: 200, data: result.rows, count:result.rowCount };
+            }
+            return { success: true, status: 200, data: result.rows[0]};
         } catch (error) {
-            console.error('❌ Database in getDataOne:', error);
+            console.error('❌ Database in getData:', error);
             return { success: false, status: 500, error: 'Failed to get data' };
         }
     }
+
+export const countData = async (
+    tableName:string , 
+    has_is_delete:boolean,
+    where? : string , 
+    value?:string | number) => {
+    try{
+        console.log('----- API action: Count Data  -----');
+
+        if (!db) {
+            return { success: false, status: 500, error: 'Database not connected' };
+        }
+        if(!/^[a-zA-Z0-9_]+$/.test(tableName)){
+            console.log('ชื่อตัวเลขที่กำหนดไม่ถูกต้อง');
+            return { success: false, status: 400, error: 'Invalid table name' };
+        }
+        if (where &&!/^[a-zA-Z0-9_]+$/.test(where)) {
+            return { success: false, status: 400, error: 'Invalid where column' };
+        }
+        let sql = `SELECT COUNT(*) FROM ${tableName} `;
+       
+        if(has_is_delete){
+            sql += `WHERE is_delete = FALSE;`
+        }else if (where && value && !has_is_delete){
+            sql += `WHERE ${where} = $1;`;
+        }else if(where && value && has_is_delete){
+            sql += `WHERE ${where} = $1 AND is_delete = FALSE;`;
+        }
+
+        const count =  (value && where)? await db.query(sql, [value]) : await db.query(sql);
+        if(!count.rows[0]){  
+            return { success: true, status: 404, count: null };
+        }
+        return { success: true, status: 200, count: Number(count.rows[0].count)};
+    }catch(error){
+        console.error('❌ Database in countData:', error);
+        return { success: false, status: 500, error: 'Failed to count data' };
+    }
+}
+export const getDataOneCoulum = async (
+    table : string,
+    select : string[],
+    where: string[],
+    value: (string | number | boolean)[],
+    order? : String | null,
+    transaction?: PoolClient | null
+)=> {
+    try{
+         console.log('----- API action: get Data One Coulumn  -----');
+
+        if (!db) {
+            return { success: false, status: 500, error: 'Database not connected' };
+        }
+         let sql = `SELECT `;
+        if(!/^[a-zA-Z0-9_]+$/.test(table)){
+            console.log('ชื่อ table or select ที่กำหนดไม่ถูกต้อง');
+            return { success: false, status: 400, error: 'Invalid table name' };
+        }
+        for(let i=0 ; i < select.length ; i++){
+            if (!/^[a-zA-Z0-9_]+$/.test(select[i] as string)) {
+                return { success: false, status: 400, error: 'Invalid select column' };
+            }
+            sql += `${select[i]} ,`
+        }
+
+        sql = sql.slice(0, -1) + ` FROM ${table} WHERE `;
+
+        for(let i=0 ; i < where.length ; i++){
+            if (!/^[a-zA-Z0-9_]+$/.test(where[i] as string)) {
+                return { success: false, status: 400, error: 'Invalid where column' };
+            }
+            sql += `${where[i]} = $${i+1} AND `
+        }
+        
+        sql = sql.slice(0, -4);
+        order? sql += ` ORDER BY ${order};` : {}
+        console.log(sql);
+
+        const result =  transaction? await transaction.query(sql, value) : await db.query(sql, value)
+        if(result.rowCount === 0){  
+            return { success: true, status: 404, data: null, count: 0 };
+        }
+        return { success: true, status: 200, data: result.rows , count: Number(result.rowCount)};
+    }catch(error){
+        console.error('❌ Database in getDataOneCoulum:', error);
+        return { success: false, status: 500, error: 'Failed to getDataOneCoulum' };
+    }
+}
+
 export const get2TablePage = async (
     table1:string ,
     table2:string ,

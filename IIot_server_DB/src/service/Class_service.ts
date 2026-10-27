@@ -11,6 +11,7 @@ import { TagRead } from './MapService/read.tag.js';
 import { LogRead } from './LogService/read.log.js';
 import { IP_CamWrite } from './IP_CamService/write.service.js';
 import { IP_CamRead } from './IP_CamService/read.service.js';
+import { Process } from "./IP_CamService/processIP_Cam.js"
 
 export const Helper = {
     Service : Service,
@@ -43,5 +44,6 @@ export const LogService = {
 
 export const IP_CamService = {
     Write : IP_CamWrite,
-    Read : IP_CamRead
+    Read : IP_CamRead,
+    Process: Process
 };
