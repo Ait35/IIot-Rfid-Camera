@@ -1,3 +1,5 @@
+.continue/
+
 #iiot-Edge-Frimware
 **/.pio/
 **/.vscode/
@@ -7,3 +9,5 @@
 #ESP32_Rfid
 iiot-Edge-Frimware/Edge_ESP32_Rfid/diagram.json
 iiot-Edge-Frimware/Edge_ESP32_Rfid/wokwi.toml
+
+
