@@ -25,9 +25,9 @@ export const Map_tagWrite = {
                         'map_tag', 'epc_id', [epc_id], ['is_delete'], [true],
                         [], [], ['epc_id', 'epc', 'is_delete', 'created_at'], transaction
                     );
-                    await Promise.allSettled(
-                        result.data.map((item: any) => QueryRedis.delCache(item.epc, 'epc'))
-                    );
+                if (result.data?.[0]?.epc) {
+                    await QueryRedis.delCache(result.data[0].epc, 'epc');
+                }
 
                 } else if (is_delete !== undefined && is_delete === false) {
                     result = await Helper.Query.Tran_SetDelete('map_tag', 'epc_id', epc_id, is_delete, transaction);

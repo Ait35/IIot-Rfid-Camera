@@ -208,7 +208,7 @@ export const SubProcess = {
             });
 
             // เมื่อกล้องส่งเสร็จและตัดสาย (Connection Closed)
-            client.on('close', () => {
+            client.on('close', async () => {
                 // ไฟล์ JPEG ทุกไฟล์ในโลกต้องเริ่มด้วย FF D8 และจบด้วย FF D9 เสมอ
                 const JPEG_SOI = Buffer.from([0xFF, 0xD8]); // SOI (Start of Image)
                 const JPEG_EOI = Buffer.from([0xFF, 0xD9]); // EOI (End of Image)
@@ -223,7 +223,7 @@ export const SubProcess = {
                     // (+2 เพื่อให้ครอบคลุมตัวอักษร 0xFF 0xD9 ตอนจบด้วย)
                     const pureImageBuffer = dataBuffer.subarray(startIndex, endIndex + 2);
                     
-                    fs.writeFileSync(saveToFolder, pureImageBuffer);
+                    await fs.promises.writeFile(saveToFolder, pureImageBuffer);
                     console.log(`IP ${parsedUrl.hostname} get image success (TCP Extracted)`);
                     resolve({ path: saveToFolder });
                 } else {
