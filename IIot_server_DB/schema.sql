@@ -72,6 +72,8 @@ CREATE TABLE IP_camera (
     snapshot_url VARCHAR(255),               -- ถ่ายภาพนิ่ง เช่น 'http://192.168.1.50/cgi-bin/snapshot.cgi'
     cam_username VARCHAR(100),
     cam_password VARCHAR(100),
+    keep_alive_port INT,
+    auth         VARCHAR(100) DEFAULT query, 
     local        VARCHAR(255),               
     status       BOOLEAN DEFAULT FALSE,     
     up_time      INT NOT NULL DEFAULT 0,     
@@ -143,7 +145,8 @@ CREATE TABLE Log_Rfid (
 CREATE TABLE Log_Images (
     Image_id         INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     Log_id           INT NOT NULL,               
-    IP_cam_id        INT NOT NULL,              
+    IP_cam_id        INT,
+    MCU_cam_id       INT,     
     image_path       VARCHAR(500) NOT NULL,     
     created_at       TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
 
@@ -152,10 +155,18 @@ CREATE TABLE Log_Images (
         REFERENCES Log_Rfid(Log_id) 
         ON DELETE CASCADE,
 
-    CONSTRAINT fk_image_camera
+    CONSTRAINT fk_image_IP_camera
         FOREIGN KEY (IP_cam_id)
         REFERENCES IP_camera(IP_cam_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT fk_image_MCU_camera
+        FOREIGN KEY (MCU_cam_id)
+        REFERENCES Device_info(Device_id)
+        ON DELETE CASCADE,
+
+    CONSTRAINT check_cam_id 
+        CHECK(num_nonnulls(IP_cam_id, MCU_cam_id) = 1)
 );
 
 CREATE TABLE Activity_Log (

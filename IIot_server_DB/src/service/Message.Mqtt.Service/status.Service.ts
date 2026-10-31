@@ -1,5 +1,4 @@
 import { updateData } from '../../Repository/updataQuery.js';
-import { Helper } from '../Class_service.js';
 
 interface C_Status {
     up_time? : string;
@@ -8,8 +7,7 @@ interface C_Status {
     last_active_at : string;
 }
 
-export const updateStatusService =  async (payload : any) => {
-    console.log('----- Mqtt action: update status -----');
+export const updateStatusService = async (payload : any) => {
     const statusDevice : C_Status = {
         ...(payload.up_time !== undefined && { up_time : payload.up_time }),
         ...(payload.hw_uptime !== undefined && { hw_uptime : payload.hw_uptime }),
@@ -18,36 +16,12 @@ export const updateStatusService =  async (payload : any) => {
     }
 
     if(statusDevice.status === false){
-        console.log('🔴 Device down');
+        console.warn(`🔴 [Device Offline] ID: ${payload.device_id}`);
     }else if(statusDevice.status === true){
-        console.log('🟢 Device up');
+        // Status is OK, keep silent to reduce log spam
     }
-    if (payload.free_heap !== undefined) {
-        console.log(`🩺 [Health Monitor] MAC: ${payload.mac} | Free RAM: ${(payload.free_heap / 1024).toFixed(1)} KB | WiFi: ${payload.rssi} dBm`);
-    }
-    return await Helper.Service.executeWithLog(
-            'update_device service', 'device_info', 'UPDATE',null,
-                async (transaction) => {
-                    const result = await updateData('device_info', 'device_id', payload.device_id, true ,statusDevice, transaction);
-                    console.log('Save status in DB : ', result.data);
-                    return { 
-                        result, 
-                        recordId:  payload.device_id , 
-                        logPayload : { ...statusDevice, ip_address : result.data.ip, mac_address: result.data.mac} 
-                    };
-                }
-            )
 
+    // อัปเดตสถานะ device_info โดยตรง ไม่ต้องเขียนลง activity_log ซ้ำซากทุกรอบ heartbeat
+    const result = await updateData('device_info', 'device_id', payload.device_id, true, statusDevice);
+    return result;
 }
-            // return await Helper.Service.executeWithLog(
-            // 'update_device service', 'device_info', 'UPDATE',null,
-            //     async (transaction) => {
-            //         const result = await updateData('device_info', 'device_id', payload.device_id, statusDevice, transaction);
-            //         console.log('Save result in DB : ', result);
-            //         return { 
-            //             result, 
-            //             recordId:  payload.device_id , 
-            //             logPayload : { ...statusDevice, ip_address : result.data.ip, mac_address: result.data.mac} 
-            //         };
-            //     }
-            // )

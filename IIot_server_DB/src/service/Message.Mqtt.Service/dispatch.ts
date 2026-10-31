@@ -1,6 +1,7 @@
 import { insertEcpAndEcpLog } from './EPC.Service.js';
 import { updateStatusService } from './status.Service.js';
 import { publishMessage } from '../../Infra/Mqtt.infra.js';
+import {IP_CamService} from '../Class_service.js'
 
 interface C_Log {
     device_id: number;
@@ -8,7 +9,7 @@ interface C_Log {
     mac : string;
     ip : string;
     distance: number;
-    timestamp?: string;
+    time_stamp?: string;
 }
 
 interface C_ECP_Tag {
@@ -44,7 +45,7 @@ export const dispatch_message = async (topic : string, message : string) => {
         const logOJB: C_Log = {
             device_id: payload.device_id,
             distance: payload.distance,
-            ...( payload.timestamp && { timestamp: payload.timestamp } )
+            ...( (payload.timestamp || payload.time_stamp) && { time_stamp: payload.timestamp || payload.time_stamp } )
         }
         console.log("📩 tocpic : ", topicParts);
         console.log("📩 payload : ", payload);
@@ -78,6 +79,11 @@ export const dispatch_message = async (topic : string, message : string) => {
                 }
                 //ถ้าเจอ ECP ใน cache หรือเจอใน DB แล้ว set Cache สำเร็จ จะสั่งให่ถ่ายรูป
                 await triggerCAM(TopicCam , result.data.log_id);
+                const res = await IP_CamService.Process.Prosecc_snapshot(result.data.log_id ,payload.group_id)
+                if(!res || res.error){
+                    console.log(res);
+                    return res
+                }
                 break; 
             case 'status':
                 await updateStatusService(payload);

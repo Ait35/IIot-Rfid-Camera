@@ -7,7 +7,7 @@ export const updateData = async (
     target_id:number ,
     is_delete:boolean ,
     user_req: Record<any, any>,
-    transaction: PoolClient) => 
+    transaction?: PoolClient | null) => 
     {
         console.log('----- API action: Update Query -----');
     
@@ -29,8 +29,8 @@ export const updateData = async (
         // console.log('SQL :' , sql);
         // console.log('values :' , values);
         try{
-            const result = await transaction.query(sql, values);
-            if(result.rowCount === 0){
+            const result = transaction ? await transaction.query(sql, values) : (db ? await db.query(sql, values) : null);
+            if(!result || result.rowCount === 0){
                 throw new Error('Failed to update group');
             }
 
@@ -96,15 +96,22 @@ export const updateMoreThen1 = async (
     where : string[],
     whereValue: (boolean|string|number)[],
     transaction?: PoolClient,
-    coalesceColumns: string[] = ['last_active_at']
 ) =>{
     console.log('----- API action: update More Then 1 -----');
+    
     let sql = 
     `UPDATE ${table} 
     SET `;
     const s = name_column.map((item) => {
-        if (coalesceColumns.includes(item)) {
-            return `${item} = COALESCE(u.${item}, ${table}.${item})`;
+        if (item === 'last_active_at') {
+            return `
+            ${item} = COALESCE(u.${item}, ${table}.${item})`;
+        }else if(item === 'up_time'){
+            return `
+            ${item} = CASE
+                WHEN u.status = false THEN 0
+                ELSE ${table}.${item} + EXTRACT(EPOCH FROM(u.last_active_at - ${table}.last_active_at))::int
+                END`
         }
         return `
         ${item} = u.${item}`;
@@ -117,7 +124,7 @@ export const updateMoreThen1 = async (
     value.map((item , index) =>{
     //หาค่าใน array item 1 ถ้าเจอ null ,undefined ให้ข้ามไปตัวถัดไป จนกว่าจพไม่เจอ null ,undefined แล้วเอาตัวน้ัน
         const sample = item.find(val => val !== null && val !== undefined);
-        let type: string = 'varchar';
+        let type: string = 'int';
         if (sample instanceof Date || (name_column[index] as string).endsWith('_at')) {
             type = "timestamptz";
         } else if (typeof sample === "number") {
@@ -144,8 +151,8 @@ export const updateMoreThen1 = async (
     sql += `
     RETURNING ${table}.${name_table_id}, ${name_column.map(col => `${table}.${col}`).join(', ')};`
 
-    console.log(sql)
-    console.log([ id, ...value ,...whereValue])
+    // console.log(sql)
+    // console.log([ id, ...value ,...whereValue])
     if(!db) return { success: false, status: 500, error: `Failed to get data ${table}`}
     try{
         const result = transaction?     

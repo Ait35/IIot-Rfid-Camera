@@ -10,6 +10,7 @@ import { dispatch_message } from './service/Message.Mqtt.Service/dispatch.js';
 import Router from './Router/Export_router.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import * as fs from 'fs';
 
 import { IP_CamService } from "./service/Class_service.js"
 import { getData } from "./Repository/ReadQuery.js"
@@ -90,6 +91,11 @@ app.listen(process.env.PORT, () => {
 });
 console.log("==============================================");
 
+//สร้างโฟรเดอรืสำรหับเก้บรูปภาพเวลารันครั้งแรก
+if (!fs.existsSync("../public/uploadsImg")) {
+    fs.mkdirSync("../public/uploadsImg", { recursive: true })
+}
+
 await updataTatalGroup()
 //console.log(listGroup)
 setInterval(async () =>{
@@ -103,6 +109,6 @@ setInterval(async () =>{
   const res = await IP_CamService.Process.checkCameraAlive(listGroup[indexGroup] as number)
   indexGroup++;
  // console.log("==============================================");
-  console.log(`⏱️ [KeepAlive] - ${Date.now() - start}ms (Status: ${(res as any)?.status})`)
+  // console.log(`⏱️ [KeepAlive] - ${Date.now() - start}ms (Status: ${(res as any)?.status})`)
 
 } , 30000)

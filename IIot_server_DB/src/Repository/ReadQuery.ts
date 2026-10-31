@@ -144,8 +144,6 @@ export const getDataOneCoulum = async (
     transaction?: PoolClient | null
 )=> {
     try{
-         console.log('----- API action: get Data One Coulumn  -----');
-
         if (!db) {
             return { success: false, status: 500, error: 'Database not connected' };
         }
@@ -172,7 +170,7 @@ export const getDataOneCoulum = async (
         
         sql = sql.slice(0, -4);
         order? sql += ` ORDER BY ${order};` : {}
-        console.log(sql);
+        //console.log(sql);
 
         const result =  transaction? await transaction.query(sql, value) : await db.query(sql, value)
         if(result.rowCount === 0){  
@@ -235,7 +233,7 @@ export const get2TablePage = async (
             LIMIT $1 
             OFFSET $2
             `;
-        console.log(sql);
+        //onsole.log(sql);
         try{
             const res = await db.query(sql , [limit , (page - 1) * limit]);
             if(res.rows.length === 0){

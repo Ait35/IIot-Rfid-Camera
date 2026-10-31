@@ -17,7 +17,7 @@ export const insertEcpAndEcpLog = async ( payload: any, dataOJB:any ,logOJB : an
                     //แต่ถ้าไม่เจอใน cache จะต้องลง DB ใน ChackCacheAndSave มีการหาใน DB อยู่แล้ว แล้ว save ลง cache ไปเลย
                     logOJB.epc_id = result.data.epc_id;
                     const insert_log= await InsertData('log_rfid', logOJB, transaction);
-                    await QueryRedis.setCache(insert_log.data.log_id, 'log_rfid', insert_log.data);
+                    await QueryRedis.setCache(insert_log.data.log_id , 'log_rfid', insert_log.data);
 
                     return {
                         result: insert_log,

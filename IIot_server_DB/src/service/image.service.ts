@@ -3,9 +3,10 @@ import { InsertData } from '../Repository/insertQuery.js';
 import { PoolClient } from 'pg';
 import { getData } from '../Repository/ReadQuery.js';
 
-interface Log_img { 
+interface Log_img {
+    [key: string]: any; 
     log_id: string;
-    camera_device_id : number;
+    mcu_cam_id : number;
     image_path: string;
 }
 
@@ -38,7 +39,7 @@ export const ImageService = {
             
             const log_img : Log_img = {
                 log_id,
-                camera_device_id :device_id,
+                mcu_cam_id :device_id,
                 image_path : imagePath
             }
             

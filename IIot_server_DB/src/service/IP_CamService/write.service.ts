@@ -3,6 +3,8 @@ import { InsertData } from '../../Repository/insertQuery.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { CreateIP_CamInput, UpdateIP_CamInput } from '../../schemas/ip_cam.schema.js';
 import { probeCamera } from '../../Infra/ONVIF/onvif.js';
+import { SubProcess } from './SubProsessIP_Cam.js';
+import { getData } from '../../Repository/ReadQuery.js';
 
 export const IP_CamWrite = {
     async post_IP_cam(Input_data: CreateIP_CamInput, By_user_id: string, ip_address: string, userAgent: string) {
@@ -49,15 +51,26 @@ export const IP_CamWrite = {
                 probe_res.snapshot_url? Input_data.snapshot_url = probe_res.snapshot_url : '';
             }
 
-            if(Input_data.rtsp_url){
-                Input_data.rtsp_url = await Helper.Service.cleanUrl(Input_data.rtsp_url);
-            }
+            let KeepAlivePort: number | null = null;
             if(Input_data.snapshot_url){
                 Input_data.snapshot_url = await Helper.Service.cleanUrl(Input_data.snapshot_url);
+                KeepAlivePort = SubProcess.getCameraPort(Input_data.snapshot_url);
+            }else if(Input_data.rtsp_url){
+                Input_data.rtsp_url = await Helper.Service.cleanUrl(Input_data.rtsp_url);
+                KeepAlivePort = SubProcess.getCameraPort(Input_data.rtsp_url);
+            }else if(Input_data.ONVIF_url){
+                KeepAlivePort = SubProcess.getCameraPort(Input_data.ONVIF_url);
             }
+          
             const insertPayload = {
                 ...Input_data,
                 by_user_id: By_user_id,
+                keep_alive_port: KeepAlivePort,
+                auth : await SubProcess.CheckAuthType(
+                    Input_data.cam_username? Input_data.cam_username : null,
+                    Input_data.cam_password? Input_data.cam_password : null,
+                    Input_data.snapshot_url? Input_data.snapshot_url : null
+                )     
             };
 
             return await Helper.Service.executeWithLog(
@@ -83,15 +96,36 @@ export const IP_CamWrite = {
         try{
             // แยก ip_cam_id ออกจากฟิลด์ที่จะ UPDATE (เพื่อไม่ให้ชนกับ Identity column ของ Postgres)
             const { ip_cam_id, ...updatePayload } = Input_data; 
+            if (updatePayload.ONVIF_url) updatePayload.ONVIF_url = await Helper.Service.cleanUrl(updatePayload.ONVIF_url);
+            if (updatePayload.rtsp_url) updatePayload.rtsp_url = await Helper.Service.cleanUrl(updatePayload.rtsp_url);
+            if (updatePayload.snapshot_url) updatePayload.snapshot_url = await Helper.Service.cleanUrl(updatePayload.snapshot_url);
 
-            if(updatePayload.ONVIF_url){
-                updatePayload.ONVIF_url = await Helper.Service.cleanUrl(updatePayload.ONVIF_url);
-            }
-            if(updatePayload.rtsp_url){
-                updatePayload.rtsp_url = await Helper.Service.cleanUrl(updatePayload.rtsp_url);
-            }
-            if(updatePayload.snapshot_url){
-                updatePayload.snapshot_url = await Helper.Service.cleanUrl(updatePayload.snapshot_url);
+            const url = updatePayload.snapshot_url || updatePayload.rtsp_url || updatePayload.ONVIF_url;
+
+            if (updatePayload.keep_alive_port === 'auto' && url) {
+                const port = SubProcess.getCameraPort(url);
+                updatePayload.keep_alive_port = port || 80;
+
+            }else if(updatePayload.keep_alive_port === 'auto' && !url){
+                const currentCam = await getData('ip_camera', 'ip_cam_id', ip_cam_id , true);
+                const get_Url = currentCam.data?.snapshot_url || currentCam.data?.rtsp_url || currentCam.data?.onvif_url;
+
+                const port = SubProcess.getCameraPort(get_Url);
+                updatePayload.keep_alive_port = port || 80;
+            };
+
+            if (updatePayload.auth === 'auto') {
+                let data ;
+                if(!url || !updatePayload.cam_username || !updatePayload.cam_password){
+                    data = (await getData('ip_camera', 'ip_cam_id', ip_cam_id , true)).data;
+                }
+
+                const detectedAuth = await SubProcess.CheckAuthType(
+                    updatePayload.cam_username? updatePayload.cam_username : data.cam_username ,
+                    updatePayload.cam_password? updatePayload.cam_password : data.cam_password, 
+                    url? url : (data.snapshot_url || data.rtsp_url || data.onvif_url)
+                );
+                updatePayload.auth = (detectedAuth? detectedAuth : "query") as UpdateIP_CamInput['auth']; 
             }
 
             return await Helper.Service.executeWithLog(
