@@ -421,6 +421,8 @@
   | `status_url` | string | ❌ | URL ดึงข้อมูลระบบ/Uptime ของกล้อง |
   | `cam_username` | string | ❌ | Username ประจำกล้องสำหรับ Authentication เช่น `"admin"` |
   | `cam_password` | string | ❌ | Password ประจำกล้อง เช่น `"888888"` |
+  | `auth` | string | ❌ | ประเภท Authentication: `"query"`, `"basic"`, `"digest"` หรือ `"auto"` (ค่าเริ่มต้น: `"auto"`) |
+  | `keep_alive_port` | number \| string | ❌ | พอร์ตสำหรับเช็คสถานะกล้อง (TCP Ping) เช่น `80`, `81` หรือ `"auto"` (ค่าเริ่มต้น: `"auto"`) |
 
 > ⚙️ **กลไกการสืบค้นข้อมูลอัตโนมัติ (Auto-Discovery & Fallback):**
 > 1. หากผู้ใช้ **ไม่ระบุ `mac` แต่ระบุ `ONVIF_url`**:

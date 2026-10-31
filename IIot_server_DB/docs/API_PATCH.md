@@ -227,6 +227,10 @@ Content-Type: application/json
   | `status` | string | ❌ | สถานะ: `'pending'`, `'active'`, `'stolen'` |
   | `is_delete` | boolean | ❌ | `true` เพื่อลบแท็ก, `false` เพื่อกู้คืนแท็ก |
 
+> 💡 **พฤติกรรมการจัดการแคช (Cache & Default Values):**
+> - เมื่อส่ง `is_delete: true` (Soft Delete): ระบบจะรีเซ็ตคอลัมน์อื่นๆ กลับเป็นค่า Default (คงค่า `epc` ไว้) และลบ Cache ออกจาก Redis ทันที
+> - เมื่อส่ง `is_delete: false` (Restore): ระบบจะกู้คืนสถานะบัตร และเซ็ต Cache คืนเข้า Redis ให้พร้อมใช้งานทันที
+
   *ตัวอย่าง Body:*
   ```json
   {
@@ -279,6 +283,8 @@ Content-Type: application/json
   | `status_url` | string | ❌ | URL ดึงสถานะใหม่ |
   | `cam_username` | string | ❌ | Username ใหม่ |
   | `cam_password` | string | ❌ | Password ใหม่ |
+  | `auth` | string | ❌ | ประเภท Authentication: `"query"`, `"basic"`, `"digest"` หรือ `"auto"` (ให้ระบบตรวจจับอัตโนมัติ) |
+  | `keep_alive_port` | number \| string | ❌ | พอร์ตสำหรับเช็คสถานะกล้อง (TCP Ping) เช่น `80`, `81` หรือ `"auto"` |
   | `local` | string | ❌ | สถานที่ติดตั้งใหม่ |
   | `status` | boolean | ❌ | สถานะ Online/Offline (`true`/`false`) |
   | `is_delete` | boolean | ❌ | Soft Delete (`true` = ลบกล้อง, `false` = กู้คืนกล้อง) |
