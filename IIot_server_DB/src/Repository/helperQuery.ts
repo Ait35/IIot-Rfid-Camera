@@ -160,5 +160,92 @@ export const Query = {
             console.log('---- Restore failed! -----');
             return { success: false, status: 500, error: 'Restore failed' };
         }
+    },
+async set_Default(
+        table: string,
+        nameColoumn_id: string, 
+        id: number[],
+        columnUpdata: string[],
+        UpdataValue: (string|boolean|number)[],
+        where: string[],
+        whereValue: string[],
+        except: string[],
+        transaction: PoolClient
+    ) {
+        console.log('----- API action: Set Default  -----');
+
+        try {
+            // หาคอลัมน์ที่ต้องเซ็ตเป็น DEFAULT
+            // รวมคอลัมน์ที่ต้องการยกเว้นทั้งหมด (id และ except)
+            const excludeCols = [nameColoumn_id, ...(except || [])];
+            
+            const getColsQuery = `
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' 
+                  AND table_name = $1 
+                  AND column_name != ALL($2::text[]) -- ใช้ตรวจสอบค่า Array ใน Postgres
+            `;
+            // ไปดึงชื่อคอลัมน์มาก่อน
+            const colResult = await transaction.query(getColsQuery, [table, excludeCols]);           
+            // สร้าง Array เตรียมไว้ เช่น ['"col1" = DEFAULT', '"col2" = DEFAULT']
+            const setClauses: string[] = colResult.rows.map(r => `"${r.column_name}" = DEFAULT`);
+
+            let sql = `UPDATE "${table}" SET `;
+            const values: any[] = [];
+            let paramIndex = 1;
+
+            //เพิ่มคอลัมน์ที่ต้องการอัปเดตแบบระบุค่าเอง
+            if (columnUpdata && columnUpdata.length > 0) {
+                columnUpdata.forEach((col, idx) => {
+                    setClauses.push(`"${col}" = $${paramIndex}`);
+                    values.push(UpdataValue[idx]); // เก็บ Value ลง Array
+                    paramIndex++;
+                });
+            }
+
+            // ถ้าไม่มีคอลัมน์ให้อัปเดตเลย ให้ Error ออกไปเพื่อป้องกันคำสั่งพัง
+            if (setClauses.length === 0) {
+                throw new Error('No columns to update');
+            }
+            
+            sql += setClauses.join(', '); // รวมชุด SET 
+
+            // ใส่เงื่อนไข WHERE
+            // เนื่องจาก id รับมาเป็น Array เราจึงต้องใช้ = ANY($X) แทนการใช้ = ธรรมดา
+            sql += ` WHERE "${nameColoumn_id}" = ANY($${paramIndex})`;
+            values.push(id);
+            paramIndex++;
+
+            // เพิ่ม WHERE เพิ่มเติม (ถ้ามี)
+            if (where && where.length > 0) {
+                const whereClauses = where.map((col, idx) => {
+                    const clause = `"${col}" = $${paramIndex}`;
+                    values.push(whereValue[idx]);
+                    paramIndex++;
+                    return clause;
+                });
+                sql += ` AND ${whereClauses.join(' AND ')}`;
+            }
+
+            // 2.3 เติม RETURNING * เพื่อให้ Postgres ส่งข้อมูลที่ถูกแก้ไขกลับมา
+            sql += ` RETURNING *;`;
+
+            // รันคำสั่ง UPDATE
+            // โค้ดส่วนนี้จะรันได้สมบูรณ์ และผูกตัวแปรได้อย่างปลอดภัย
+            const result = await transaction.query(sql, values);
+            
+            if (result.rowCount === 0) {
+                throw new Error('Failed to update');
+            }
+            
+            return { success: true, status: 200, data: result.rows };
+
+        } catch (error: any) {
+            if (error.code === '23505') {
+                throw new Error(`This data in ${table} already exists. Please try again.`, { cause: error });
+            }
+            throw error;
+        }
     }
 }

@@ -32,7 +32,7 @@ export const InsertData = async (
             return { success: true, status: 200, data: result.rows[0] };
         }catch(error : any){
             if(error.code === '23505'){
-                throw new Error(`This data in ${tableName} is already`);
+                throw new Error(`This data in ${tableName} is already`, {cause: error});
             }
             throw error;
         }
@@ -81,7 +81,7 @@ export const MultiInsert = async (
             return { success: true, status: 200, data: result.rows };
     }catch(error: any){
         if(error.code === '23505'){
-            throw new Error(`This data in ${table} is already try again`);
+            throw new Error(`This data in ${table} is already try again`, {cause: error});
         }
         throw error;
     }

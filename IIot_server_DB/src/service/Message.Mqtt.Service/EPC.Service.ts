@@ -35,7 +35,23 @@ export const insertEcpAndEcpLog = async ( payload: any, dataOJB:any ,logOJB : an
         // console.log('----- Data not found in DB or cache -----');
         return await Helper.Service.executeWithLog('Insert map_Tag', 'map_tag', 'INSERT', null , 
             async (transaction: PoolClient)=>{
-                const res_query = await InsertData('map_tag', dataOJB, transaction);
+                let res_query;
+                try {
+                    res_query = await InsertData('map_tag', dataOJB, transaction);
+                } catch (err: any) {
+                    // ถ้าเจอ Error ว่าข้อมูลซ้ำ
+                    if (err.cause?.code === '23505') {
+                        // ให้ไป SELECT ดึงข้อมูลแถวที่มีอยู่แล้วมาแทนเลย ไม่ต้องแครช
+                        const existing = await transaction.query(
+                            'SELECT * FROM map_tag WHERE epc = $1 FOR UPDATE;', 
+                            [dataOJB.epc] //FOR UPDATE คือล็อคไว้ กัน EPC เข้ามาพร้อมกันในเสี้ยววินาที Transaction เลยยังไม่ทันล็อค
+                        );
+                        res_query = { data: existing.rows[0] };
+                    } else {
+                        throw err;
+                    }
+                }
+
                 logOJB.epc_id = res_query.data.epc_id;
                 const insert_log = await InsertData('log_rfid', logOJB, transaction);
                 console.log('✅ Insert log_rfid Successful!');
@@ -60,7 +76,7 @@ export const insertEcpAndEcpLog = async ( payload: any, dataOJB:any ,logOJB : an
                     }
                 };
             });
-    }catch(error){
+    }catch(error: any){
         console.error('Error occurred while checking cache or fetching data from database:', error);
     }
 }
