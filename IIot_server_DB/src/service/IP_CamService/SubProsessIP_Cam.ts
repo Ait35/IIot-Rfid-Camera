@@ -117,7 +117,7 @@ export const SubProcess = {
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = path.dirname(__filename);
 
-        const imageName = `IP_cam_${log_id}_${Service.getFormattedTimestamp()}.jpg`
+        const imageName = `IP_cam-l${log_id}-${Service.getFormattedTimestamp()}_${Math.round(Math.random() * 1e4)}.jpg`
         const saveToFloder = path.join(__dirname, "../../../public/uploadsImg" , imageName);
         
         password === null ? password = '' : {};
@@ -153,7 +153,7 @@ export const SubProcess = {
                 return { path: "" };
             }
         }catch (err: any) {
-            // 2. ถ้าเจอ VStarcam (urllib v3 จะพ่น Error เพราะ Header เพี้ยน) 
+            // ถ้าเจอ VStarcam (urllib v3 จะพ่น Error เพราะ Header เพี้ยน) 
             // ให้สลับไปใช้ Raw TCP    
             if (err.message.includes("Invalid header token") || err.message.includes("Parse Error") || err.code === 'HPE_INVALID_HEADER_TOKEN') {
                 console.log(`IP ${ip} HTTP parser failed. Switching to Raw TCP mode...`);

@@ -20,11 +20,18 @@ export const CreateIP_CamSchema = z.object({
         .regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, "รูปแบบ IP Address ไม่ถูกต้อง"),
 
     // URL และ User/Pass สำหรับกล้อง - เป็น Optional เพื่อรองรับกล้องทุกรุ่น (ใช้ z.string เพื่อให้รับ rtsp:// ได้)
+    brand: z.string().max(100, "ชื่อยี่ห้อกล้องยาวเกิน 100 ตัวอักษร").optional(),
+    model: z.string().max(100, "ชื่อรุ่นกล้องยาวเกิน 100 ตัวอักษร").optional(),
     rtsp_url: z.string().min(1, "RTSP url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     snapshot_url: z.string().min(1, "Snapshot url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     ONVIF_url: z.string().min(1, "ONVIF url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     cam_username: z.string().optional(),
-    cam_password: z.string().optional()
+    cam_password: z.string().optional(),
+    auth: z.enum(['query', 'basic', 'digest', 'auto']).optional(),
+    keep_alive_port: z.union([
+        z.literal('auto'),
+        z.coerce.number().int().positive("Port ต้องเป็นตัวเลขมากกว่า 0")
+    ]).optional()
 }).refine((data) => { 
     let { snapshot_url , cam_username , cam_password} = data;
     if(cam_password && !cam_username) return false;
@@ -47,6 +54,8 @@ export const UpdateIP_CamSchema = z.object({
     }).int("ip_cam_id ต้องเป็นจำนวนเต็ม").positive("ip_cam_id ต้องเป็นตัวเลขมากกว่า 0"),
 
     cam_name: z.string().min(2, "ชื่อกล้องต้องมีความยาวอย่างน้อย 2 ตัวอักษร").max(100).optional(),
+    brand: z.string().max(100).optional(),
+    model: z.string().max(100).optional(),
     group_id: z.coerce.number().int().positive("group_id ต้องเป็นตัวเลขมากกว่า 0").optional(),
     ip: z.string().regex(
         /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, 
@@ -55,7 +64,6 @@ export const UpdateIP_CamSchema = z.object({
     rtsp_url: z.string().optional(),
     snapshot_url: z.string().optional(),
     ONVIF_url: z.string().optional(),
-    status_url: z.string().optional(),
     cam_username: z.string().optional(),
     cam_password: z.string().optional(),
     auth: z.enum(['query', 'basic', 'digest' , 'auto']).optional(),
@@ -74,5 +82,20 @@ export const UpdateIP_CamSchema = z.object({
 }, {
     message: "ต้องระบุอย่างน้อย 1 ฟิลด์ที่ต้องการแก้ไขข้อมูล"
 });
+
+export const ProbeIP_CamSchema = z.object({
+    ip: z.string().regex(
+        /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, 
+        "รูปแบบ IP Address ไม่ถูกต้อง"
+    ).optional(),
+    ONVIF_url: z.string().min(1, "ONVIF url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
+    cam_username: z.string().optional(),
+    cam_password: z.string().optional(),
+    ip_cam_id: z.coerce.number().int().positive("ip_cam_id ต้องเป็นจำนวนเต็มบวก").optional()
+}).refine((data) => data.ONVIF_url !== undefined || data.ip !== undefined || data.ip_cam_id !== undefined, {
+    message: "ต้องระบุอย่างน้อย ip, ONVIF_url หรือ ip_cam_id เพื่อทำการ Probe ข้อมูลกล้อง"
+});
+
+export type ProbeIP_CamInput = z.infer<typeof ProbeIP_CamSchema>;
 
 export type UpdateIP_CamInput = z.infer<typeof UpdateIP_CamSchema>;

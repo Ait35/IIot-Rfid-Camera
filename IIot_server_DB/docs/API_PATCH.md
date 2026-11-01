@@ -280,7 +280,8 @@ Content-Type: application/json
   | `rtsp_url` | string | ❌ | URL สตรีมสดใหม่ |
   | `snapshot_url` | string | ❌ | URL ดึงภาพนิ่งใหม่ |
   | `ONVIF_url` | string | ❌ | URL ONVIF ใหม่ |
-  | `status_url` | string | ❌ | URL ดึงสถานะใหม่ |
+  | `brand` | string | ❌ | ยี่ห้อกล้องใหม่ |
+  | `model` | string | ❌ | รุ่นกล้องใหม่ |
   | `cam_username` | string | ❌ | Username ใหม่ |
   | `cam_password` | string | ❌ | Password ใหม่ |
   | `auth` | string | ❌ | ประเภท Authentication: `"query"`, `"basic"`, `"digest"` หรือ `"auto"` (ให้ระบบตรวจจับอัตโนมัติ) |

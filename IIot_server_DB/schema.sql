@@ -1,4 +1,4 @@
-﻿DROP TABLE IF EXISTS Activity_Log CASCADE;
+DROP TABLE IF EXISTS Activity_Log CASCADE;
 DROP TABLE IF EXISTS Log_Images CASCADE;
 DROP TABLE IF EXISTS Log_Rfid CASCADE;
 DROP TABLE IF EXISTS MQTT CASCADE;
@@ -67,13 +67,15 @@ CREATE TABLE IP_camera (
     Group_id     INT NOT NULL,               
     By_user_id   INT NOT NULL,
     ip           VARCHAR(45) NOT NULL, 
+    brand        VARCHAR(100),
+    model        VARCHAR(100),
     ONVIF_url    VARCHAR(255),              
     rtsp_url     VARCHAR(255),               -- สตรีมสด เช่น 'rtsp://admin:123456@192.168.1.50:554/stream1'
     snapshot_url VARCHAR(255),               -- ถ่ายภาพนิ่ง เช่น 'http://192.168.1.50/cgi-bin/snapshot.cgi'
     cam_username VARCHAR(100),
     cam_password VARCHAR(100),
     keep_alive_port INT,
-    auth         VARCHAR(100) DEFAULT query, 
+    auth         VARCHAR(100) DEFAULT 'query', 
     local        VARCHAR(255),               
     status       BOOLEAN DEFAULT FALSE,     
     up_time      INT NOT NULL DEFAULT 0,     

@@ -32,6 +32,7 @@ export async function probeCamera(url: string, user: string, pass: string) {
         return {
             success: true,
             mac: macAddress,               
+            brand: (info?.Manufacturer as string) || null,
             model: info.Model,           
             serial: info.SerialNumber,     
             rtsp_url: streamUrl,           

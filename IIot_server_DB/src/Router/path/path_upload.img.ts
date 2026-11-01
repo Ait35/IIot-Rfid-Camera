@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { upload_img_control } from '../../Controller/Img.control/upload.control.js';
+import { upload_img_control } from '../../Controller/MCU_Img.control/MCUupload.control.js';
 import {upload}  from '../../Infra/uploadImg.Multer.js';
 import { Auth_uploadImg } from '../../Middlewares/auth.uploadImg.js';
 import { rateLimitImageUpload } from '../../Middlewares/rateLimit.Middleware.js';

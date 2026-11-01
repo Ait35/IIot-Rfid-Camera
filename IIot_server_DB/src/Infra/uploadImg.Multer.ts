@@ -1,6 +1,7 @@
 import multer from 'multer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import Service from '../service/helper_func.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -11,10 +12,17 @@ const storage = multer.diskStorage({
     cb(null, path.join(__dirname, '../../public/uploadsImg'));
   },
   filename: (req, file, cb) => {
-    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน เช่น cam_DOOR1_1696312345.jpg
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน เช่น cam_G1_D1_DOOR1_1696312345.jpg
+    const {log_id} = req.body;
+    if(!log_id){
+      return cb(new Error('Missing required parameters: log_id' ),  file.originalname);
+    }
+    const uniqueSuffix = Service.getFormattedTimestamp() + '_' + Math.round(Math.random() * 1e4);
     const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `cam_${uniqueSuffix}${ext}`);
+    cb(null, `M_cam-l${log_id}-${uniqueSuffix}${ext}`);
+    // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    // const ext = path.extname(file.originalname) || '.jpg';
+    // cb(null, `cam_${uniqueSuffix}${ext}`);
   },
 });
 

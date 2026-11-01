@@ -1,5 +1,5 @@
 import { Response , Request} from 'express';
-import { ImageService } from '../../service/image.service.js';
+import { ImageService } from '../../service/MCU.image.service.js';
 
 export const upload_img_control = async ( req:Request , res:Response ) => {
     try{    

@@ -418,7 +418,8 @@
   | `ONVIF_url` | string | ⚠️ เงื่อนไข | URL บริการ ONVIF เช่น `"http://192.168.1.37:10080/onvif/device_service"` |
   | `rtsp_url` | string | ❌ | URL สตรีมสด RTSP (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
   | `snapshot_url` | string | ❌ | URL ดึงภาพนิ่งตอนแตะบัตร (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
-  | `status_url` | string | ❌ | URL ดึงข้อมูลระบบ/Uptime ของกล้อง |
+  | `brand` | string | ❌ | ยี่ห้อกล้อง เช่น `"Hikvision"`, `"VStarcam"` (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
+  | `model` | string | ❌ | รุ่นกล้อง เช่น `"C7816WIP"`, `"DS-2CD2043"` (ถ้าไม่ระบุ ระบบจะพยายามค้นหาจาก ONVIF ให้อัตโนมัติ) |
   | `cam_username` | string | ❌ | Username ประจำกล้องสำหรับ Authentication เช่น `"admin"` |
   | `cam_password` | string | ❌ | Password ประจำกล้อง เช่น `"888888"` |
   | `auth` | string | ❌ | ประเภท Authentication: `"query"`, `"basic"`, `"digest"` หรือ `"auto"` (ค่าเริ่มต้น: `"auto"`) |
@@ -504,3 +505,61 @@
       ]
     }
     ```
+
+---
+
+## 10. Probe IP Camera (ทดสอบและค้นหาการตั้งค่ากล้องอัตโนมัติ)
+ใช้สำหรับตรวจสอบและดึงการตั้งค่าของกล้องวงจรปิดผ่าน ONVIF, ตรวจสอบ MAC Address ผ่าน ARP, ทดสอบประเภท Authentication (query / basic / digest) และตรวจหาพอร์ต Keep-Alive อัตโนมัติ โดยไม่ต้องบันทึกลงฐานข้อมูล สามารถส่งข้อมูลกล้องใหม่มาทดสอบ หรือระบุ `ip_cam_id` ของกล้องเดิมเพื่อสแกนซ้ำได้
+
+- **Endpoint**: `POST /iiot/post/ip_cam/probe`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Headers**:
+  ```http
+  Content-Type: application/json
+  Authorization: Bearer <TOKEN>
+  ```
+- **Request Body (JSON)**:
+  | Field | Type | Required | Description |
+  |---|---|---|---|
+  | `ip` | string | ⚠️ เงื่อนไข | IP Address ของกล้องในวง LAN เช่น `"192.168.1.37"` |
+  | `ONVIF_url` | string | ⚠️ เงื่อนไข | URL บริการ ONVIF เช่น `"http://192.168.1.37:10080/onvif/device_service"` |
+  | `cam_username` | string | ❌ | Username ประจำกล้องสำหรับ Authentication |
+  | `cam_password` | string | ❌ | Password ประจำกล้อง |
+  | `ip_cam_id` | number | ⚠️ เงื่อนไข | ID ของกล้องที่มีอยู่ในระบบ (หากส่งมา ระบบจะดึง IP และ URL เดิมมาทดสอบให้อัตโนมัติ) |
+
+  *ตัวอย่าง Body แบบที่ 1: ตรวจสอบกล้องใหม่ก่อนลงทะเบียน:*
+  ```json
+  {
+    "ip": "192.168.1.37",
+    "ONVIF_url": "http://192.168.1.37:10080/onvif/device_service",
+    "cam_username": "admin",
+    "cam_password": "password888888"
+  }
+  ```
+
+  *ตัวอย่าง Body แบบที่ 2: สแกนข้อมูลซ้ำจากกล้องเดิมในระบบ:*
+  ```json
+  {
+    "ip_cam_id": 1
+  }
+  ```
+
+- **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "status": 200,
+    "data": {
+      "ip": "192.168.1.37",
+      "mac": "7A882B014614",
+      "brand": "VStarcam",
+      "model": "C7816WIP",
+      "serial": "1234567890",
+      "ONVIF_url": "http://192.168.1.37:10080/onvif/device_service",
+      "rtsp_url": "rtsp://192.168.1.37:10554/udp/av0_0",
+      "snapshot_url": "http://192.168.1.37:81/snapshot.cgi",
+      "keep_alive_port": 81,
+      "auth": "query"
+    }
+  }
+  ```

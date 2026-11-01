@@ -12,7 +12,7 @@ interface Log_img {
 
 export const ImageService = {
     async processUploadedImage(log_id: string , device_id: number , group_id: number , imagePath: string) {
-        console.log('----- API action: UploadedImage service -----');
+        console.log('----- API action: Mcu UploadedImage service -----');
         try{
             //ส่ง ecp / log id มา เอามาเช็ค cache ถ้าไม่เจอก็เข้าไปหาใน log rfid 
             const result = await Helper.Service.ChackCacheAndSave('log_id', log_id, 'log_rfid', 'log_id' , false);
@@ -43,7 +43,7 @@ export const ImageService = {
                 image_path : imagePath
             }
             
-            return await Helper.Service.executeWithLog('UploadedImage service', 'log_images', 'INSERT', null ,
+            return await Helper.Service.executeWithLog('MCU UploadedImage service', 'log_images', 'INSERT', null ,
                 async (transaction: PoolClient)=>{
                     const result = await InsertData('log_images', log_img, transaction);
 
