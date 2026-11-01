@@ -10,48 +10,48 @@ export const IP_CamWrite = {
     async post_IP_cam(Input_data: CreateIP_CamInput, By_user_id: string, ip_address: string, userAgent: string) {
         console.log('----- API action: post_IP_cam service -----');
         try{
-            if(Input_data.ONVIF_url){
-                Input_data.ONVIF_url = await Helper.Service.cleanUrl(Input_data.ONVIF_url);
+            //ถ้ามี ONVIF_url และยังไม่มีข้อมูลครบ ให้ลอง Probe ดูก่อน
+            let res;
+            if (Input_data.ONVIF_url && (!Input_data.mac || !Input_data.rtsp_url || !Input_data.snapshot_url)) {
+                res = await probeCamera(
+                    Input_data.ONVIF_url,
+                    Input_data.cam_username || '',
+                    Input_data.cam_password || ''
+                );
+                if (res?.success) {
+                    if (!Input_data.mac && res.mac) Input_data.mac = res.mac;
+                    if (!Input_data.rtsp_url && res.rtsp_url) Input_data.rtsp_url = res.rtsp_url;
+                    if (!Input_data.snapshot_url && res.snapshot_url) Input_data.snapshot_url = res.snapshot_url;
+                }
             }
 
-            if(!Input_data.mac && Input_data.ONVIF_url){
-                const probe_res = await probeCamera(
-                    Input_data.ONVIF_url,
-                    Input_data.cam_username? Input_data.cam_username : '',
-                    Input_data.cam_password? Input_data.cam_password : ''
-                );
-                if(!probe_res.success || !probe_res.mac){
-                    if(await Helper.Service.pingIP(Input_data.ip)){
-                        const arpMac = await Helper.Service.getMacFromArp(Input_data.ip);
-                        if (arpMac) {
-                            Input_data.mac = arpMac;
-                            console.log('✅ Get MAC Address from Arp Successful:', arpMac);
-                        } else {
-                            // 🌟 ถ้า Ping เจอ แต่ ARP ไม่ได้ MAC (เช่น อยู่นอกวง Subnet)
-                            return {
-                                success: false,
-                                status: 400,
-                                error: 'พบ IP กล้อง แต่ไม่สามารถอ่าน MAC Address ได้ (อาจอยู่คนละ Subnet) กรุณาระบุ MAC ด้วยตนเอง'
-                            };
-                        }
-                    }else{
-                        console.log('❌ Unable to get MAC Address from Arp!');
-
+            // ถ้าสุดท้ายแล้ว ยังไม่มี MAC ค่อย Fallback ไป Ping + ARP
+            if (!Input_data.mac) {
+                const ping = await Helper.Service.pingIP(Input_data.ip);
+                if (ping) {
+                    const arpMac = await Helper.Service.getMacFromArp(Input_data.ip);
+                    if (arpMac) {
+                        Input_data.mac = arpMac;
+                        console.log('✅ Get MAC Address from Arp Successful:', arpMac);
+                    } else {
                         return {
                             success: false,
-                            status: 500,
-                            error: 'Error: Unable to probe camera',
-                            details: probe_res.error
+                            status: 400,
+                            error: 'พบ IP กล้อง แต่ไม่สามารถอ่าน MAC Address ได้ (อาจอยู่คนละ Subnet) กรุณาระบุ MAC ด้วยตนเอง'
                         };
                     }
-                }else{
-                    Input_data.mac = probe_res.mac;
+                } else {
+                    console.log('❌ Unable to get MAC Address from Arp!');
+                    return {
+                        success: false,
+                        status: 500,
+                        error: 'Error: Unable to probe camera',
+                        details: "ping ไม่เจอ ip กล้อง"
+                    };
                 }
-                probe_res.rtsp_url? Input_data.rtsp_url = probe_res.rtsp_url : '';
-                probe_res.snapshot_url? Input_data.snapshot_url = probe_res.snapshot_url : '';
             }
 
-            let KeepAlivePort: number | null = null;
+            let KeepAlivePort: number = 80;
             if(Input_data.snapshot_url){
                 Input_data.snapshot_url = await Helper.Service.cleanUrl(Input_data.snapshot_url);
                 KeepAlivePort = SubProcess.getCameraPort(Input_data.snapshot_url);

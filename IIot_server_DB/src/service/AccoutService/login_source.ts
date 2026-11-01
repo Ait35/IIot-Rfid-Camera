@@ -57,6 +57,7 @@ export const LoginService = {
             const Token = HelperService.genToken(userInfo.user_id);
             await Helper.Query.Tran_updateToken(userInfo.user_id, Token, transaction);
             // อัพเดต Redis เสมอ เพื่อให้ Session ถูกรีเฟรช และมีข้อมูลตรงกับ Token ปัจจุบัน
+            await QueryRedis.delCache(String(userInfo.user_id), 'session');
             await QueryRedis.setCache(String(userInfo.user_id), 'session', { token: Token });
             console.log('✅Update Token Successful!');
 

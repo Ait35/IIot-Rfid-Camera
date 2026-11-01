@@ -8,7 +8,7 @@ import { request } from 'urllib';
 import http from 'http';
 
 export const SubProcess = {
-    getCameraPort(rtsp_url?: string, onvif_url?: string , snapshot_url?: string): number|null {
+    getCameraPort(rtsp_url?: string, onvif_url?: string , snapshot_url?: string): number {
         if (snapshot_url) {
             const match = snapshot_url.match(/:(\d+)(?=[/?#]|$)/); 
             if(match){
@@ -28,7 +28,7 @@ export const SubProcess = {
             }
         } 
         
-        return null;
+        return 80;
     },
     async CheckAuthType(
         user: string | null | undefined , 
@@ -36,7 +36,7 @@ export const SubProcess = {
         IncomeUrl: string | null| undefined 
     ){
         if(!IncomeUrl || !user || !password){
-            return null ;
+            return "query" ;
         }
         const typelist = ["query" ,"basic", "digest"]
 
@@ -119,7 +119,8 @@ export const SubProcess = {
 
         const imageName = `IP_cam_${log_id}_${Service.getFormattedTimestamp()}.jpg`
         const saveToFloder = path.join(__dirname, "../../../public/uploadsImg" , imageName);
-
+        
+        password === null ? password = '' : {};
         console.log(`user: ${user} pass : ${password} auth: ${auth}`)
         try{
             if(auth != "digest"){

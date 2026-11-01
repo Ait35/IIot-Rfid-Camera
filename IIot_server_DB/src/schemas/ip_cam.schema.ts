@@ -23,7 +23,6 @@ export const CreateIP_CamSchema = z.object({
     rtsp_url: z.string().min(1, "RTSP url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     snapshot_url: z.string().min(1, "Snapshot url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     ONVIF_url: z.string().min(1, "ONVIF url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
-    status_url: z.string().min(1, "Status url ต้องมีความยาวอย่างน้อย 1 ตัวอักษร").optional(),
     cam_username: z.string().optional(),
     cam_password: z.string().optional()
 }).refine((data) => { 
@@ -33,10 +32,11 @@ export const CreateIP_CamSchema = z.object({
     if (snapshot_url && !snapshot_url.endsWith(".cgi")) {
         snapshot_url = snapshot_url.replace(/\.[^?]+(?=\?|$)/, ".cgi");
     }
-    const {mac ,ONVIF_url} = data;
-    return Object.values({mac ,ONVIF_url}).some((val) => val !== undefined);
+    return true;
+    // const {mac ,ONVIF_url} = data;
+    // return Object.values({mac ,ONVIF_url}).some((val) => val !== undefined);
 }, {
-    message: "Error เพราะ ต้องใส่ mac หรือ ONVIF_url อย่างใดอย่าหนึ่ง หรือ ใส่ password แต่ไม่มี user"
+    message: "หากใส่ cam_password จำเป็นต้องใส่ cam_username ด้วย"
 });
 
 export type CreateIP_CamInput = z.infer<typeof CreateIP_CamSchema>;
