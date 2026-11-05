@@ -53,7 +53,8 @@ struct ImageInfo {
     int log_id;
     camera_fb_t *img ;
 };
-
+WebServer inline server(80);
+inline bool shouldRestartForWiFi = false;
 
 inline QueueHandle_t ImageQueue;
 inline int countImage = 0;
@@ -74,7 +75,7 @@ inline int conFrimReset = 0;
 inline struct tm timeinfo;
 inline bool IsWedGetIP = false;
 // inline int countToRestartESP ;
-inline unsigned long WedServerCountTime = 0;
+inline unsigned long WebServerCountTime = 0;
 inline unsigned long publishStatusTime = 0;
 
 inline Srceen_Info Dumy("Dumy",1 ,nullptr);

@@ -1,15 +1,24 @@
+let get_UserMqtt = false;
 
 document.addEventListener("DOMContentLoaded", () => {
     console.log("5555555555555")
     checkStatus();
-    // pollIp();
+    const innterval_id = setInterval(() => {
+        if(get_UserMqtt){
+            clearInterval(innterval_id)
+            console.log("innterval stop");
+        }
+        console.log("innterval runing");
+        checkMqttUser();
+    }, 1000); 
+
     document.getElementById('btn-scan').addEventListener('click', scanNetworks);
     document.getElementById('btn-connect').addEventListener('click', connectWifi);
     document.getElementById('btn-logout').addEventListener('click', logout);
     document.getElementById('btn-submit').addEventListener('click', connectBackend);
     document.getElementById('btn-reApi').addEventListener('click', resetKey_Api);
+    document.getElementById('btn-mqtt-submit').addEventListener('click', connectMqtt);
 });
-
 
 
 // 1. เช็คสถานะตอนโหลดหน้าเว็บว่ามีค่าใน EEPROM หรือเชื่อมต่ออยู่แล้วหรือไม่
@@ -33,7 +42,8 @@ function checkStatus() {
         });
 }
 
-// 2. แสกนหา WiFi
+// 2. แสกนหา WiFiq1
+
 function scanNetworks() {
     const list = document.getElementById('network-list');
     list.innerHTML = '<li>Scanning networks... Please wait.</li>';
@@ -62,21 +72,40 @@ function scanNetworks() {
         });
 }
 
-function pollIp() {
-    console.log("Call get api");
-    fetch('/is_connected')
+function checkMqttUser() {
+    fetch('/getUserMqtt')
         .then(response => response.json())
         .then(data => {
-            console.log(data);
-            if (data.ip) {
-                console.log("go to " + data.ip);
-                location.replace("http://" + data.ip) 
-            } else {
-                console.log("not data");
-                setTimeout(pollIp, 1000);
+            if (data.connected || data.hasSavedCredentials) {
+                // document.getElementById('logout-section').classList.remove('hidden');
+                document.getElementById('mqtt_user').value = data.MqttUser || "Not Found Please restart";
+                get_UserMqtt = true ;
             }
-            
         })
+        .catch(err => {
+            console.error("Error checking MqttUser:", err);
+            // Fallback: แสดงหน้า Setup
+            document.getElementById('setup-section').classList.remove('hidden');
+        });
+}
+
+function showPopup(ip) {
+    // 1. อัปเดตข้อความในหน้าหลัก
+    const statusText = document.getElementById('connect-status');
+    statusText.innerHTML = `เชื่อมต่อสำเร็จ! IP ของคุณคือ: <a href="http://${ip}" target="_blank">${ip}</a>`;
+    statusText.style.color = "green";
+
+    const modal = document.getElementById('ip-modal');
+    const ipLink = document.getElementById('popup-ip-link');
+    ipLink.innerText = "http://" + ip;
+    ipLink.href = "http://" + ip;
+    
+    modal.classList.remove('hidden');
+}
+
+// ฟังก์ชันสำหรับปิด Pop-up
+function closePopup() {
+    document.getElementById('ip-modal').classList.add('hidden');
 }
 
 
@@ -93,23 +122,28 @@ function connectWifi() {
 
     statusText.innerText = "Connecting and saving to EEPROM/Preferences...";
     statusText.style.color = "blue";
-
-    // ส่งข้อมูลไปให้ ESP32 ผ่าน POST Request
-    // แนะนำให้อ่าน Request Body ฝั่ง C++ แล้วบันทึกลง Preferences (แทน EEPROM แบบเก่า)
     fetch('/connect', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `ssid=${encodeURIComponent(ssid)}&password=${encodeURIComponent(password)}`
-    })
-    .then(response => {
-        if(response.ok) {
+    }).then(response => response.json())
+    .then(data => {
+        console.log(data);
+        if (data.ip) {
+            console.log("Got IP: " + data.ip);
             statusText.innerText = "Success! ESP32 is connecting/rebooting.";
             statusText.style.color = "green";
-            setTimeout(() => {pollIp(); }, 8000);
+            showPopup(data.ip);
         } else {
-            statusText.innerText = "Failed to send credentials.";
-            statusText.style.color = "red";
+            console.log("not data");
+            // setTimeout(pollIp, 1000);
         }
+    })
+    .catch(err => {
+        // สำคัญ: กรณี ESP32 เปลี่ยน WiFi เครือข่ายอาจจะหลุดชั่วคราว ทำให้ fetch error
+        // เราต้องสั่งให้มันลองขอใหม่เรื่อยๆ จนกว่า ESP32 จะปล่อย IP
+        console.log("Network error, retrying...", err);
+       
     });
 }
 
@@ -150,6 +184,36 @@ function resetKey_Api(){
                 alert("key Api cleared. Please reconnect to the Server.");
                 location.reload();
             });   
+}
+
+function connectMqtt() {
+    // const mqtt_user = document.getElementById('mqtt_user').value;
+    const mqtt_pass = document.getElementById('mqtt_pass').value;
+    const statusText = document.getElementById('mqtt-status');
+
+    statusText.innerText = "Saving MQTT to ESP32...";
+    statusText.style.color = "blue";
+
+    fetch('/connectMqtt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `mqtt_pass=${encodeURIComponent(mqtt_pass)}`
+    })
+    .then(response => {
+        if(response.ok) {
+            statusText.innerText = "MQTT Saved successfully!";
+            statusText.style.color = "green";
+
+            
+        } else {
+            statusText.innerText = "Failed to save MQTT.";
+            statusText.style.color = "red";
+        }
+    })
+    .catch(err => {
+        statusText.innerText = "Network Error.";
+        statusText.style.color = "red";
+    });
 }
 
 // 4. ลบข้อมูลออก (Logout)

@@ -17,8 +17,7 @@ namespace Backend {
         // }
         HTTPClient http;
 
-        String serverPath = Secret::API_URL; 
-        http.begin(serverPath);
+        http.begin(Secret::API_URL);
         Serial.println("Connecting to server...");
         Serial.println("----------------------------------------");
 
@@ -54,9 +53,13 @@ namespace Backend {
             Serial.println("❌ No topic in response, cannot connect to server");
             return false;
         }
-
         mqtt_info.userMqtt = doc["data"]["user_mqtt"].as<String>();
-        mqtt_info.passMqtt = doc["data"]["pass_mqtt"].as<String>();
+
+        preferences.begin("mqtt-creds", false); // โหมดเขียน
+        preferences.putString("mqtt_user", mqtt_info.userMqtt);
+        preferences.end();
+
+        Serial.println("Mqtt User: " + mqtt_info.userMqtt);
         device_info.device_id = doc["data"]["device_id"];
         device_info.group_id = doc["data"]["group_id"];
 
@@ -95,7 +98,7 @@ namespace Backend {
             Camera::clearImageBuffer();
             return false;
         }
-        if(Secret::API_upload_url.length() == 0 || portBackend == 0){
+        if(Secret::API_upload_url.length() == 0 || Secret::portBackend == 0){
             Serial.println("No API URL ,cannot send image to server");
             Camera::clearImageBuffer();
             return false;

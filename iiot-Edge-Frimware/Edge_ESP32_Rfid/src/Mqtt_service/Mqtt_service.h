@@ -19,8 +19,6 @@ class Mqtt_service {
         String topic_sub_broadcats;
         String clientId ;
 
-        int port = Secret::portServer;
-        const char* HostServer = Secret::serverMqtt;
     public:
         PubSubClient client{espClient};
 

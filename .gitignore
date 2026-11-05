@@ -1,5 +1,7 @@
 .continue/
 
+IIot_server_DB/mosquitto.conf
+
 #iiot-Edge-Frimware
 **/.pio/
 **/.vscode/

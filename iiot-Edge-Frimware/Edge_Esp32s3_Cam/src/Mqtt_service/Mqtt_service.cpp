@@ -1,4 +1,5 @@
 #include "Mqtt_service.h"
+#include "./Network_config/WebServerSetup.h"
 
 Mqtt_service::Mqtt_service(){}
 
@@ -29,10 +30,11 @@ void Mqtt_service::setupMqtt(
     // this->server = server;
     this->clientId = "ESP32Client-" + String(random(0xffff), HEX);
     Serial.println("clientId: " + this->clientId);
-    Serial.println("HostServer: " + String(HostServer));
-    Serial.println("port: " + String(port));
+    String Host = serverMqtt;
+    Serial.println("HostServer: " + Host);
+    Serial.println("port: " + String(portMqtt));
 
-    client.setServer(this->HostServer, this->port);
+    client.setServer(serverMqtt, portMqtt);
     client.setKeepAlive(30);
 }
 
@@ -107,6 +109,8 @@ void Mqtt_service::reconnect(OLED* oled)
     }
 
     while (!client.connected()) {
+        WebService::loopWebServer();
+
         if(WiFi.status() != WL_CONNECTED){
             ESP.restart();
         }
@@ -124,7 +128,7 @@ void Mqtt_service::reconnect(OLED* oled)
             countToRestartESP++;
             if (countToRestartESP >= 10) {
                 Serial.println("Failed to reconnect to MQTT, restart ESP");
-                ESP.restart();
+                // ESP.restart();
             }
 
             if (this->connectMqtt()) {

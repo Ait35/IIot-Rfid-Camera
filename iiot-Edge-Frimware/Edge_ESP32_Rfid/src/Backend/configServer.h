@@ -12,8 +12,8 @@ namespace Backend {
         }
         HTTPClient http;
 
-        String serverPath = Secret::API_URL; 
-        http.begin(serverPath);
+        //String serverPath = Secret::API_URL; 
+        http.begin(API_URL);
         Serial.println("Connecting to server...");
         Serial.println("----------------------------------------");
 
@@ -49,9 +49,12 @@ namespace Backend {
             Serial.println("❌ No topic in response, cannot connect to server");
             return false;
         }
-
         mqtt_info.userMqtt = doc["data"]["user_mqtt"].as<String>();
-        mqtt_info.passMqtt = doc["data"]["pass_mqtt"].as<String>();
+
+        preferences.begin("mqtt-creds", false); // โหมดเขียน
+        preferences.putString("mqtt_user", mqtt_info.userMqtt);
+        preferences.end();
+        
         device_info.device_id = doc["data"]["device_id"];
         device_info.group_id = doc["data"]["group_id"];
 

@@ -51,6 +51,8 @@ struct Rfid_data {
     String tag;
     int distance;
 };
+WebServer inline server(80);
+inline bool shouldRestartForWiFi = false;
 
 AiEsp32RotaryEncoder inline encoder(ROTARY_ENCODER_PIN_A, ROTARY_ENCODER_PIN_B, ROTARY_ENCODER_PSH_PIN, ROTARY_ENCODER_VCC_PIN, ROTARY_ENCODER_STEPS);
 

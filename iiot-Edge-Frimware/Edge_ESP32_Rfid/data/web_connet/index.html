@@ -7,7 +7,7 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-<div class="container">
+    <div class="container">
         <h2>ESP32 Network Setup</h2>
         <!-- ส่วนสำหรับตั้งค่า WiFi -->
         <div id="setup-section" class="hidden">
@@ -45,8 +45,34 @@
                 <button id="btn-reApi" class="api-btn">Reset</button>
             </div>
             <p id="connecKeytApi-status"></p>
+
+            <hr style="margin: 20px 0; border: 0.5px solid #eee;">
+
+            <!-- เพิ่มส่วนตั้งค่า MQTT ตรงนี้ -->
+            <p><strong>MQTT Configuration:</strong></p>
+            <div class="form-group" style="margin-top: 5px;">
+                <label>MQTT Username:</label>
+                <input type="text" id="mqtt_user" readonly placeholder="Fetched from server">
+            </div>
+            <div class="form-group">
+                <label>MQTT Password:</label>
+                <input type="password" id="mqtt_pass" placeholder="Enter MQTT Password">
+            </div>
+            <button id="btn-mqtt-submit" class="primary-btn" style="margin-top: 15px;">Save MQTT</button>
+            <p id="mqtt-status"></p>
+
+            <hr style="margin: 20px 0; border: 0.5px solid #eee;">
             <p>คลิก Logout เพื่อลบข้อมูลออกจาก EEPROM/Preferences และรีสตาร์ท</p>
             <button id="btn-logout" class="danger-btn">Logout & Clear</button>
+        </div>
+    </div>
+
+    <div id="ip-modal" class="modal-overlay hidden">
+        <div class="modal-box">
+            <h3>เชื่อมต่อ WiFi สำเร็จ!</h3>
+            <p>ESP32 ได้รับ IP Address แล้ว<br>กรุณาคลิกลิงก์ด้านล่างเพื่อเข้าสู่หน้า Config:</p>
+            <a id="popup-ip-link" href="#" target="_blank">http://0.0.0.0</a>
+            <button id="btn-close-modal" class="primary-btn" onclick="closePopup()">ตกลง / ปิดหน้าต่าง</button>
         </div>
     </div>
 
