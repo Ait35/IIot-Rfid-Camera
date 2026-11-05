@@ -17,8 +17,8 @@ export const MqttWrite = {
             topic: inputData.topic,
             group_id: inputData.group_id,
             by_user_id,
-            ...(inputData.user_mqtt && { user_mqtt: inputData.user_mqtt }),
-            ...(inputData.pass_mqtt && { pass_mqtt: inputData.pass_mqtt }),
+            ...(inputData.user_mqtt && { user_mqtt: inputData.user_mqtt}),
+            ...(inputData.pass_mqtt && { pass_mqtt: Helper.Service.createHash(inputData.pass_mqtt) }),
         };
         const action = 'INSERT';
         const table = 'mqtt';
@@ -58,6 +58,10 @@ export const MqttWrite = {
         const action = 'UPDATE';
         const transaction = await db.connect();
         try {
+            if(updatePayload.pass_mqtt){
+                updatePayload.pass_mqtt = await Helper.Service.createHash(updatePayload.pass_mqtt);
+            }
+            
             await transaction.query('BEGIN');
 
             if (is_delete !== undefined) {

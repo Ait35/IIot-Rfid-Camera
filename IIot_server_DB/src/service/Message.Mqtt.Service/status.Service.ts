@@ -23,5 +23,10 @@ export const updateStatusService = async (payload : any) => {
 
     // อัปเดตสถานะ device_info โดยตรง ไม่ต้องเขียนลง activity_log ซ้ำซากทุกรอบ heartbeat
     const result = await updateData('device_info', 'device_id', payload.device_id, true, statusDevice);
+    if(result.success){
+        console.log(`✅ [Device Status Updated] ID: ${payload.device_id}`);
+    }else{
+        console.error(`❌ [Failed to Update Device Status] ID: ${payload.device_id}`);
+    }
     return result;
 }

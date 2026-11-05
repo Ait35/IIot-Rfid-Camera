@@ -2,6 +2,8 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { exec } from 'child_process';
 import util from 'util';
+import bcrypt from 'bcryptjs';
+
 
 import {PoolClient} from 'pg';
 import { db } from '../Infra/connect_db.js';
@@ -16,6 +18,13 @@ export interface ITokenPayload {
 }
 
 const Service = {
+    async  createHash (plainPassword: string) {
+        return await bcrypt.hash(plainPassword, 10); ;
+    },
+    async  verifyHash(plainPassword: string, hashFromDb: string){
+        return await bcrypt.compare(plainPassword, hashFromDb);
+    },
+    
     getFormattedTimestamp(): string {
         const now = new Date();
         const pad = (n: number) => String(n).padStart(2, '0');

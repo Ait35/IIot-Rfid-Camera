@@ -13,16 +13,25 @@ const storage = multer.diskStorage({
   },
   filename: (req, file, cb) => {
     // ตั้งชื่อไฟล์ให้ไม่ซ้ำกัน เช่น cam_G1_D1_DOOR1_1696312345.jpg
-    const {log_id} = req.body;
-    if(!log_id){
+    try{
+      const {log_id} = JSON.parse(req.body.Jsondata);
+      console.log(log_id);
+      if(!log_id){
       return cb(new Error('Missing required parameters: log_id' ),  file.originalname);
     }
-    const uniqueSuffix = Service.getFormattedTimestamp() + '_' + Math.round(Math.random() * 1e4);
-    const ext = path.extname(file.originalname) || '.jpg';
-    cb(null, `M_cam-l${log_id}-${uniqueSuffix}${ext}`);
-    // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    // const ext = path.extname(file.originalname) || '.jpg';
-    // cb(null, `cam_${uniqueSuffix}${ext}`);
+      const uniqueSuffix = Service.getFormattedTimestamp() + '_' + Math.round(Math.random() * 1e4);
+      const ext = path.extname(file.originalname) || '.jpg';
+      cb(null, `M_cam-l${log_id}-${uniqueSuffix}${ext}`);
+      // const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+      // const ext = path.extname(file.originalname) || '.jpg';
+      // cb(null, `cam_${uniqueSuffix}${ext}`);
+    }
+    catch (error) {
+      console.error('Error parsing JSON:', error);
+      return cb(new Error('Invalid JSON in request body') , file.originalname);
+    }
+
+    
   },
 });
 

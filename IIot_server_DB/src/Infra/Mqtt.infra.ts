@@ -13,8 +13,8 @@ export const initMqtt =  {
     async connect() {
         const brokerUrl = process.env.MQTT_BROKER_URL || 'mqtt://broker.emqx.io';
         const options: IClientOptions = {
-            username: process.env.MQTT_SUPPER_USER as string,
-            password: process.env.MQTT_PASSWORD as string,
+            username: '',
+            password: '',
             reconnectPeriod: 5000, // ถ้าหลุด ให้พยายามต่อใหม่ทุกๆ 5 วินาที
             clean: true, // เคลียร์ session เก่าทิ้งเมื่อเริ่มใหม่
         };
