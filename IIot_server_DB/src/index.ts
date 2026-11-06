@@ -92,10 +92,10 @@ app.listen(process.env.PORT, () => {
 console.log("==============================================");
 
 //สร้างโฟรเดอรืสำรหับเก้บรูปภาพเวลารันครั้งแรก
-if (!fs.existsSync("../public/uploadsImg")) {
-    fs.mkdirSync("../public/uploadsImg", { recursive: true })
+const uploadDir = path.join(__dirname, '../public/uploadsImg');
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
 }
-
 await updataTatalGroup()
 //console.log(listGroup)
 setInterval(async () =>{

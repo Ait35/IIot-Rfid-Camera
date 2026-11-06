@@ -66,7 +66,7 @@ void WebService::handleConnect() {
                 ); // บันทึกเวลาที่เชื่อมต่อสำเร็จ
                 shouldRestartForWiFi = true;
                 ServerConnectTime = millis();
-                break;
+                return;
             }
             delay(200);
             Serial.print("=");

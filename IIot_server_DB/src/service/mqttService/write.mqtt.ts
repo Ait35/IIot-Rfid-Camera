@@ -18,7 +18,7 @@ export const MqttWrite = {
             group_id: inputData.group_id,
             by_user_id,
             ...(inputData.user_mqtt && { user_mqtt: inputData.user_mqtt}),
-            ...(inputData.pass_mqtt && { pass_mqtt: Helper.Service.createHash(inputData.pass_mqtt) }),
+            ...(inputData.pass_mqtt && { pass_mqtt: await Helper.Service.createHash(inputData.pass_mqtt) }),
         };
         const action = 'INSERT';
         const table = 'mqtt';

@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", () => {
         if(get_UserMqtt){
             clearInterval(innterval_id)
             console.log("innterval stop");
+            return;
         }
         console.log("innterval runing");
         checkMqttUser();
