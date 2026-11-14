@@ -1,32 +1,18 @@
-import { DashboardQuery } from '../../Repository/DashboardQuery.js';
-import { Helper } from '../Class_service.js';
+import { DashboardQuery } from '../../Repository/ReadQuery/DashboardQuery.js';
+import Service from '../helper_func.js';
 
 export const DashboardService = {
-    async get_dashboardSummary(userId: number, ip_address: string, userAgent: string) {
+    async get_dashboardSummary(_userId?: number, _ip_address?: string, _userAgent?: string) {
         console.log('----- API action: get_dashboardSummary service -----');
 
-        const res_query = await Helper.Service.readAndWriteLog('get_dashboardSummary', 'dashboard', userId, null,
-            async () => {
-                // Get both stats and recent scans
-                const statsRes = await DashboardQuery.getDashboardStats();
-                const recentScansRes = await DashboardQuery.getRecentScans(10); // Limit to 10 recent scans
+        return await Service.executeRead('get_dashboardSummary', async () => {
+            const statsRes = await DashboardQuery.getDashboardStats();
+            const recentScansRes = await DashboardQuery.getRecentScans(10);
 
-                const data = {
-                    stats: statsRes.success ? statsRes.data : null,
-                    recentScans: recentScansRes.success ? recentScansRes.data : []
-                };
-
-                return {
-                    result: data,
-                    logPayload: {
-                        ip_address: ip_address,
-                        userAgent: userAgent,
-                        action: 'view_dashboard'
-                    }
-                };
-            }
-        );
-
-        return res_query;
+            return {
+                stats: statsRes.success ? statsRes.data : null,
+                recentScans: recentScansRes.success ? recentScansRes.data : []
+            };
+        });
     }
 };

@@ -1,9 +1,9 @@
 import { fetch_data } from '../../External_api/pull_apt.js';
 import { db } from '../../Infra/connect_db.js';
-import { Helper } from '../Class_service.js';
+import { Query } from '../../Repository/helperQuery.js';
 import HelperService from '../helper_func.js';
 import { ActivityLogService } from '../../Repository/Activity_Log/ActivityQuery.js';
-import { InsertData } from '../../Repository/insertQuery.js';
+import { InsertData } from '../../Repository/insertQuery/helper.insert.Query.js';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
 import { SigninInput } from '../../schemas/auth.schema.js';
 
@@ -58,7 +58,7 @@ export const SigninService = {
             const result = await InsertData(table, req as any, transaction);
 
             const accessToken = HelperService.genToken(result.data.user_id);
-            await Helper.Query.Tran_updateToken(result.data.user_id, accessToken, transaction);
+            await Query.Tran_updateToken(result.data.user_id, accessToken, transaction);
             await QueryRedis.setCache(String(result.data.user_id), 'session', { token: accessToken });
             
             console.log(`--- status : ${result.status} ---`);

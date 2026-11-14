@@ -1,6 +1,6 @@
 import { Request, Response , NextFunction } from 'express';
-import { Helper } from '../service/Class_service.js';
-import { getData } from '../Repository/ReadQuery.js';
+import Service from '../service/helper_func.js';
+import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
 
 export const Auth_uploadImg = async (req: Request, res: Response , next: NextFunction) => {
     console.log('----- API action: Auth_uploadImg -----');
@@ -15,20 +15,10 @@ export const Auth_uploadImg = async (req: Request, res: Response , next: NextFun
     console.log('API Key :', key_api);
     try{
         //prefix : string, cacheKey : string, DBtable : string , DBcolumn : string
-        const result = await Helper.Service.readAndWriteLog('UploadImg' , 'Device_info' , null , null,
-                async ()=>  {
-                const result = await getData('device_info', 'key_api', key_api, true);
-                if (!result.data) {
-                    return { result: null, logPayload: { key_api } };
-                }
-                
-                return { 
-                    result: result.data,
-                    logPayload: {
-                        device_id : result.data.device_id? result.data.device_id : null, 
-                        mac : result.data.mac ? result.data.mac : null}
-                };
-            });
+        const result = await Service.executeRead('UploadImg', async () => {
+            const result = await getData('device_info', 'key_api', key_api, true);
+            return result.data || null;
+        });
 
         if(!result.success){
             console.log(result.error );

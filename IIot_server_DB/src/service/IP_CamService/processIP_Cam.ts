@@ -1,9 +1,9 @@
-import { getDataOneCoulum } from '../../Repository/ReadQuery.js';
+import { getDataOneCoulum } from '../../Repository/ReadQuery/helper.Read.Query.js';
 import Helper from '../helper_func.js';
 import { updateMoreThen1 } from '../../Repository/updataQuery.js';
 import { SubProcess } from './SubProsessIP_Cam.js';
 import { PoolClient } from 'pg';
-import { MultiInsert } from '../../Repository/insertQuery.js';
+import { MultiInsert } from '../../Repository/insertQuery/helper.insert.Query.js';
 
 export const MainProcess  = {
     async checkCameraAlive (group_id : number){

@@ -1,10 +1,11 @@
-import { Helper } from '../Class_service.js';
-import { InsertData } from '../../Repository/insertQuery.js';
+import Service from '../helper_func.js';
+import { Query } from '../../Repository/helperQuery.js';
+import { InsertData } from '../../Repository/insertQuery/helper.insert.Query.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { CreateIP_CamInput, UpdateIP_CamInput, ProbeIP_CamInput } from '../../schemas/ip_cam.schema.js';
 import { probeCamera } from '../../Infra/ONVIF/onvif.js';
 import { SubProcess } from './SubProsessIP_Cam.js';
-import { getData } from '../../Repository/ReadQuery.js';
+import { getData } from '../../Repository/ReadQuery/helper.Read.Query.js';
 
 export const IP_CamWrite = {
     async post_IP_cam(Input_data: CreateIP_CamInput, By_user_id: string, ip_address: string, userAgent: string) {
@@ -29,9 +30,9 @@ export const IP_CamWrite = {
 
             // ถ้าสุดท้ายแล้ว ยังไม่มี MAC ค่อย Fallback ไป Ping + ARP
             if (!Input_data.mac) {
-                const ping = await Helper.Service.pingIP(Input_data.ip);
+                const ping = await Service.pingIP(Input_data.ip);
                 if (ping) {
-                    const arpMac = await Helper.Service.getMacFromArp(Input_data.ip);
+                    const arpMac = await Service.getMacFromArp(Input_data.ip);
                     if (arpMac) {
                         Input_data.mac = arpMac;
                         console.log('✅ Get MAC Address from Arp Successful:', arpMac);
@@ -55,10 +56,10 @@ export const IP_CamWrite = {
 
             let KeepAlivePort: number = 80;
             if(Input_data.snapshot_url){
-                Input_data.snapshot_url = await Helper.Service.cleanUrl(Input_data.snapshot_url);
+                Input_data.snapshot_url = await Service.cleanUrl(Input_data.snapshot_url);
                 KeepAlivePort = SubProcess.getCameraPort(Input_data.snapshot_url);
             }else if(Input_data.rtsp_url){
-                Input_data.rtsp_url = await Helper.Service.cleanUrl(Input_data.rtsp_url);
+                Input_data.rtsp_url = await Service.cleanUrl(Input_data.rtsp_url);
                 KeepAlivePort = SubProcess.getCameraPort(Input_data.rtsp_url);
             }else if(Input_data.ONVIF_url){
                 KeepAlivePort = SubProcess.getCameraPort(Input_data.ONVIF_url);
@@ -82,7 +83,7 @@ export const IP_CamWrite = {
                 auth: detectedAuth
             };
 
-            return await Helper.Service.executeWithLog(
+            return await Service.executeWithLog(
                 'post_IP_cam', 'ip_camera', 'INSERT', By_user_id,
                 async (transaction) => {
                     const res_query = await InsertData('ip_camera', insertPayload, transaction);
@@ -106,7 +107,7 @@ export const IP_CamWrite = {
             // แยก ip_cam_id ออกจากฟิลด์ที่จะ UPDATE (เพื่อไม่ให้ชนกับ Identity column ของ Postgres)
             const { ip_cam_id, ...updatePayload } = Input_data; 
             if (updatePayload.ONVIF_url) {
-                updatePayload.ONVIF_url = await Helper.Service.cleanUrl(updatePayload.ONVIF_url);
+                updatePayload.ONVIF_url = await Service.cleanUrl(updatePayload.ONVIF_url);
                 // ถ้าไม่ได้ส่ง snapshot_url หรือ rtsp_url มาใน PATCH ให้ลอง Probe ดึงมาเติมให้
                 if (!updatePayload.snapshot_url || !updatePayload.rtsp_url) {
                     let camData: any = null;
@@ -127,8 +128,8 @@ export const IP_CamWrite = {
                     }
                 }
             }
-            if (updatePayload.rtsp_url) updatePayload.rtsp_url = await Helper.Service.cleanUrl(updatePayload.rtsp_url);
-            if (updatePayload.snapshot_url) updatePayload.snapshot_url = await Helper.Service.cleanUrl(updatePayload.snapshot_url);
+            if (updatePayload.rtsp_url) updatePayload.rtsp_url = await Service.cleanUrl(updatePayload.rtsp_url);
+            if (updatePayload.snapshot_url) updatePayload.snapshot_url = await Service.cleanUrl(updatePayload.snapshot_url);
 
             const url = updatePayload.snapshot_url || updatePayload.rtsp_url || updatePayload.ONVIF_url;
 
@@ -158,13 +159,13 @@ export const IP_CamWrite = {
                 updatePayload.auth = (detectedAuth? detectedAuth : "query") as UpdateIP_CamInput['auth']; 
             }
 
-            return await Helper.Service.executeWithLog(
+            return await Service.executeWithLog(
                 'update_ip_cam', 'ip_camera', 'UPDATE', By_user_id,
                 async (transaction) => {
                     let result;
 
                     if (updatePayload.is_delete !== undefined) {
-                        result = await Helper.Query.Tran_SetDelete(
+                        result = await Query.Tran_SetDelete(
                             'ip_camera', 
                             'ip_cam_id', 
                             ip_cam_id,
@@ -215,7 +216,7 @@ export const IP_CamWrite = {
             }
 
             if (onvifUrl) {
-                onvifUrl = await Helper.Service.cleanUrl(onvifUrl);
+                onvifUrl = await Service.cleanUrl(onvifUrl);
             }
 
             let probeResult: any = null;
@@ -226,16 +227,16 @@ export const IP_CamWrite = {
             // ค้นหา MAC จาก ONVIF หรือ ARP
             let mac: string | null = probeResult?.mac || null;
             if (!mac && ip) {
-                const ping = await Helper.Service.pingIP(ip);
+                const ping = await Service.pingIP(ip);
                 if (ping) {
-                    mac = await Helper.Service.getMacFromArp(ip);
+                    mac = await Service.getMacFromArp(ip);
                 }
             }
 
             let rtspUrl = probeResult?.rtsp_url || null;
             let snapshotUrl = probeResult?.snapshot_url || null;
-            if (snapshotUrl) snapshotUrl = await Helper.Service.cleanUrl(snapshotUrl);
-            if (rtspUrl) rtspUrl = await Helper.Service.cleanUrl(rtspUrl);
+            if (snapshotUrl) snapshotUrl = await Service.cleanUrl(snapshotUrl);
+            if (rtspUrl) rtspUrl = await Service.cleanUrl(rtspUrl);
 
             const targetUrl = snapshotUrl || rtspUrl || onvifUrl || null;
             const port = targetUrl ? SubProcess.getCameraPort(targetUrl) : 80;

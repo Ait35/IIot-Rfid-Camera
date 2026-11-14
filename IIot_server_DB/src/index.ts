@@ -12,8 +12,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import * as fs from 'fs';
 
-import { IP_CamService } from "./service/Class_service.js"
-import { getData } from "./Repository/ReadQuery.js"
+import { MainProcess } from './service/IP_CamService/processIP_Cam.js';
+import { getData } from "./Repository/ReadQuery/helper.Read.Query.js"
 
 async function startServer() {
   try {
@@ -72,6 +72,8 @@ app.use(cors());
 app.use(express.json());
 // เปิดให้ Frontend เข้าถึงไฟล์รูปภาพผ่าน URL /uploads/...
 app.use('/uploads', express.static(path.join(__dirname, '../public/uploadsImg')));
+// เปิดให้ Frontend เข้าถึงไฟล์ static เว็บแอป (HTML, CSS, JS, Fonts, Images)
+app.use(express.static(path.join(__dirname, '../public')));
 
 app.use((req, res, next) => {
     const start = Date.now();
@@ -83,6 +85,11 @@ app.use((req, res, next) => {
 });
 
 app.use(Router);
+
+// รองรับ SPA Client Routing (เมื่อเปิด URL โดยตรง)
+app.get(['/', '/login', '/signin', '/dashboard'], (_req, res) => {
+    res.sendFile(path.join(__dirname, '../public/index.html'));
+});
 
 await startServer();
 
@@ -106,7 +113,7 @@ setInterval(async () =>{
     indexGroup = 0 ;
   }
   const start = Date.now();
-  const res = await IP_CamService.Process.checkCameraAlive(listGroup[indexGroup] as number)
+  const res = await MainProcess.checkCameraAlive(listGroup[indexGroup] as number)
   indexGroup++;
  // console.log("==============================================");
   // console.log(`⏱️ [KeepAlive] - ${Date.now() - start}ms (Status: ${(res as any)?.status})`)

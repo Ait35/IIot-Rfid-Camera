@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { GroupService } from '../../service/Class_service.js';
+import { GroupWrite } from '../../service/GroupService/writ.group.js';
 import { CreateGroupInput, UpdateGroupInput } from '../../schemas/group.schema.js';
 
 export const group_post_control = async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const group_post_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: CreateGroupInput = req.body;
-        const group_res = await GroupService.Write.post_group(inputData, userId, ipAddress, userAgent);
+        const group_res = await GroupWrite.post_group(inputData, userId, ipAddress, userAgent);
         
         if (!group_res.success) {
             console.log(group_res);
@@ -42,7 +42,7 @@ export const Group_update_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: UpdateGroupInput = req.body;
-        const group_res = await GroupService.Write.update_group(inputData, userId, ipAddress, userAgent);
+        const group_res = await GroupWrite.update_group(inputData, userId, ipAddress, userAgent);
         
         if (!group_res.success) {
             console.log(group_res);

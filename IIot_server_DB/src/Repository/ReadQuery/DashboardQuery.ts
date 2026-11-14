@@ -1,4 +1,4 @@
-import { db } from '../Infra/connect_db.js';
+import { db } from '../../Infra/connect_db.js';
 
 export const DashboardQuery = {
     async getRecentScans(limit: number = 10) {
@@ -18,17 +18,28 @@ export const DashboardQuery = {
                 di.device_name AS scanned_by_device,
                 di.device_type,
                 di.local AS location,
-                li.image_path AS latest_image
+                li.image_path AS latest_image,
+                li.ip_cam_id,
+                li.mcu_cam_id,
+                COALESCE(ipc.cam_name, mcu.device_name, 'กล้องอัตโนมัติ') AS camera_name,
+                CASE 
+                    WHEN li.ip_cam_id IS NOT NULL THEN 'IP Camera (ONVIF)'
+                    WHEN li.mcu_cam_id IS NOT NULL THEN 'ESP32-CAM (MCU)'
+                    ELSE 'Camera'
+                END AS camera_type,
+                COALESCE(ipc.ip, mcu.ip) AS camera_ip
             FROM log_rfid lr
             JOIN map_tag mt ON lr.epc_id = mt.epc_id
             JOIN device_info di ON lr.device_id = di.device_id
             LEFT JOIN LATERAL (
-                SELECT image_path 
+                SELECT image_path, ip_cam_id, mcu_cam_id 
                 FROM log_images 
                 WHERE log_id = lr.log_id 
                 ORDER BY created_at DESC 
                 LIMIT 1
             ) li ON true
+            LEFT JOIN ip_camera ipc ON li.ip_cam_id = ipc.ip_cam_id
+            LEFT JOIN device_info mcu ON li.mcu_cam_id = mcu.device_id
             ORDER BY lr.time_stamp DESC
             LIMIT $1;
         `;

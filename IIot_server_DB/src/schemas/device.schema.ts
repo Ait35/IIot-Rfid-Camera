@@ -15,7 +15,17 @@ export const CreateDeviceSchema = z.object({
         .int("group_id ต้องเป็นจำนวนเต็ม")
         .positive("group_id ต้องเป็นตัวเลขมากกว่า 0"),
 
-    type: z.enum(["RFID", "CAM"] as const)
+    type: z.enum(["RFID", "CAM"] as const),
+
+    ip: z.string()
+        .regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, "รูปแบบ IP Address ไม่ถูกต้อง")
+        .optional(),
+    subnet: z.string()
+        .regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, "รูปแบบ Subnet Mask ไม่ถูกต้อง")
+        .optional(),
+    gate_way: z.string()
+        .regex(/^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/, "รูปแบบ Gateway ไม่ถูกต้อง")
+        .optional()
 });
 
 export type CreateDeviceInput = z.infer<typeof CreateDeviceSchema>;
@@ -37,7 +47,8 @@ export const UpdateDeviceSchema = z.object({
     local: z.string().min(1, "สถานที่ติดตั้งห้ามเป็นค่าว่าง").optional(),
     is_delete: z.boolean().optional(),
     status: z.boolean().optional(),
-    key_api: z.string().optional()
+    key_api: z.string().optional(),
+    refresh_key_api: z.boolean().optional()
 }).refine((data) => { 
     // กฎพิเศษ: ต้องมีอย่างน้อย 1 ฟิลด์นอกจาก device_id ถูกส่งมาแก้ไข (ป้องกันส่งมาแค่ { device_id: 1 } แล้วไม่อัปเดตอะไรเลย)
     const { device_id, ...updates } = data;

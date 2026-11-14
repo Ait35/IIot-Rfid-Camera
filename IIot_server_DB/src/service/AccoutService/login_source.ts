@@ -2,7 +2,7 @@ import { fetch_data } from '../../External_api/pull_apt.js';
 import { db } from '../../Infra/connect_db.js';
 import { LoginQuery } from '../../Repository/loginQuery.js';
 import { ActivityLogService } from '../../Repository/Activity_Log/ActivityQuery.js';
-import { Helper } from '../Class_service.js';
+import { Query } from '../../Repository/helperQuery.js';
 import HelperService from '../helper_func.js';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
 import { updateData } from '../../Repository/updataQuery.js';
@@ -39,7 +39,7 @@ export const LoginService = {
             // data จาก api ตรวจสอบว่าเป็นคนของ ม. ไหม
             const profile = res_api.data;
             if (!profile.status || profile.status === 'graduated' || profile.status === 'suspended') {
-                const res = await Helper.Query.SetDelete('Users', 'user_id', userInfo.user_id, true);
+                const res = await Query.SetDelete('Users', 'user_id', userInfo.user_id, true);
                 if (!res.success) {
                     console.log('Failed to delete user :', res);
                     return res;
@@ -55,7 +55,7 @@ export const LoginService = {
             await transaction.query('BEGIN');
 
             const Token = HelperService.genToken(userInfo.user_id);
-            await Helper.Query.Tran_updateToken(userInfo.user_id, Token, transaction);
+            await Query.Tran_updateToken(userInfo.user_id, Token, transaction);
             // อัพเดต Redis เสมอ เพื่อให้ Session ถูกรีเฟรช และมีข้อมูลตรงกับ Token ปัจจุบัน
             await QueryRedis.delCache(String(userInfo.user_id), 'session');
             await QueryRedis.setCache(String(userInfo.user_id), 'session', { token: Token });
@@ -72,7 +72,7 @@ export const LoginService = {
                     }
                 }
             }
-            await Helper.Query.Tran_updateTime('Users', 'last_login_at', 'user_id', userInfo.user_id, transaction);
+            await Query.Tran_updateTime('Users', 'last_login_at', 'user_id', userInfo.user_id, transaction);
 
             await ActivityLogService.Insert_logAction(userInfo.user_id, 'LOGIN', 'User', userInfo.user_id, {
                 university_id: userInfo.university_id,
@@ -85,7 +85,18 @@ export const LoginService = {
             await transaction.query('COMMIT');
             
             console.log('----- Add System Log Successful! -----');
-            return { success: true, status: 200, token: Token };
+            return {
+                success: true,
+                status: 200,
+                token: Token,
+                user: {
+                    user_id: userInfo.user_id,
+                    university_id: userInfo.university_id,
+                    first_name: userInfo.first_name,
+                    last_name: userInfo.last_name,
+                    role: userInfo.role
+                }
+            };
         } catch (error) {
             await transaction.query('ROLLBACK');
             console.error('❌ Rollback Transaction:', error);

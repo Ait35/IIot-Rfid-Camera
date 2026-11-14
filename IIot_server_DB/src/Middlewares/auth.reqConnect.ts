@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
-import {Helper} from '../service/Class_service.js';
-import { getData } from '../Repository/ReadQuery.js';
+import Service from '../service/helper_func.js';
+import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
 
 export const Auth_reqConnect = async (req: Request, res: Response) => {
     console.log('----- API action: authMiddleware -----');
@@ -21,25 +21,19 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
 
     try{
         //prefix : string, cacheKey : string, DBtable : string , DBcolumn : string
-        const result = await Helper.Service.readAndWriteLog('ReqConnect' , 'Device_info' , null , null,
-             async ()=>  {
-                const device_data = await getData('device_info', 'key_api', api_key, true);
-                if (!device_data.data) {
-                    return { result: null, logPayload: { api_key, mac } };
-                }
-                const mqttdata = await getData('mqtt', 'group_id', device_data.data.group_id, true);
-                
-                const payload =  { 
-                    ...mqttdata.data ? mqttdata.data : null,
-                    device_id : device_data.data.device_id ? device_data.data.device_id : null ,
-                    mac : device_data.data.mac? device_data.data.mac : null
-                };
-                
-                return { 
-                    result: payload,
-                    logPayload: payload,
-                };
-            });
+        const result = await Service.executeRead('ReqConnect', async () => {
+            const device_data = await getData('device_info', 'key_api', api_key, true);
+            if (!device_data.data) {
+                return null;
+            }
+            const mqttdata = await getData('mqtt', 'group_id', device_data.data.group_id, true);
+
+            return {
+                ...(mqttdata.data ? mqttdata.data : null),
+                device_id: device_data.data.device_id ? device_data.data.device_id : null,
+                mac: device_data.data.mac ? device_data.data.mac : null
+            };
+        });
 
         if(!result.success){
             console.log(result.error );

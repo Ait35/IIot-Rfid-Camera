@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { DeviceService } from '../../service/Class_service.js';
+import { DeviceWrite } from '../../service/DeviceService/write.device.js';
 import { CreateDeviceInput, UpdateDeviceInput } from '../../schemas/device.schema.js';
 
 export const device_post_control = async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const device_post_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: CreateDeviceInput = req.body;
-        const device_res = await DeviceService.Write.post_device(inputData, userId, ipAddress, userAgent);
+        const device_res = await DeviceWrite.post_device(inputData, userId, ipAddress, userAgent);
         
         if (!device_res.success) {
             console.log(device_res);
@@ -42,7 +42,7 @@ export const device_update_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: UpdateDeviceInput = req.body;
-        const device_res = await DeviceService.Write.update_device(inputData, userId, ipAddress, userAgent);
+        const device_res = await DeviceWrite.update_device(inputData, userId, ipAddress, userAgent);
         
         if (!device_res.success) {
             console.log(device_res);

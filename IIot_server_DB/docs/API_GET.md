@@ -22,13 +22,17 @@
 
 | Endpoint | หน้าที่ | รูปแบบ Auth | Query Parameters | อัตราจำกัด (Rate Limit) |
 |---|---|---|---|---|
-| `GET /iiot/get/group` | ดึงรายชื่อกลุ่มอุปกรณ์ทั้งหมด (พร้อม pagination) | Bearer JWT | `page`, `limit` | 100 req / 15 min |
-| `GET /iiot/get/device` | ดึงรายการอุปกรณ์ทั้งหมด (RFID / CAM) | Bearer JWT | `page`, `limit` | 100 req / 15 min |
-| `GET /iiot/get/mqtt` | ดึงรายการการตั้งค่า MQTT ประจำกลุ่ม | Bearer JWT | `page`, `limit` | 100 req / 15 min |
-| `GET /iiot/get/tag` | ดึงรายการแท็ก RFID ที่ลงทะเบียนในระบบ | Bearer JWT | `page`, `limit` | 100 req / 15 min |
-| `GET /iiot/get/log` | ดึงประวัติการสแกนบัตร RFID พร้อม URL รูปภาพ | Bearer JWT | `page`, `limit` | 100 req / 15 min |
+| `GET /iiot/get/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบันจาก Token | Bearer JWT | *ไม่มี* | ตามสิทธิ์ Token |
+| `GET /iiot/get/group` | ดึงรายชื่อกลุ่มอุปกรณ์ (พร้อมจำนวนอุปกรณ์ในกลุ่ม) | Bearer JWT | `page`, `limit`, `search`, `is_delete` | 100 req / 15 min |
+| `GET /iiot/get/device` | ดึงรายการอุปกรณ์ (RFID / CAM) พร้อมกล้องในกลุ่ม | Bearer JWT | `page`, `limit`, `device_type`, `status`, `group_id`, `search`, `is_delete` | 100 req / 15 min |
+| `GET /iiot/get/ip_cam` | ดึงรายการกล้อง IP Camera ประจำกลุ่ม | Bearer JWT | `page`, `limit`, `status`, `group_id`, `search`, `is_delete` | 100 req / 15 min |
+| `GET /iiot/get/mqtt` | ดึงรายการการตั้งค่า MQTT ประจำกลุ่ม | Bearer JWT | `page`, `limit`, `group_id`, `search` | 100 req / 15 min |
+| `GET /iiot/get/tag` | ดึงรายการแท็ก RFID ที่ลงทะเบียนในระบบ | Bearer JWT | `page`, `limit`, `status`, `search` | 100 req / 15 min |
+| `GET /iiot/get/log` | ดึงประวัติการสแกนบัตร RFID พร้อมข้อมูลแท็กและอุปกรณ์ | Bearer JWT | `page`, `limit`, `device_id`, `search` | 100 req / 15 min |
 | `GET /iiot/get/dashboard` | ดึงข้อมูลสรุปสถิติและ 10 การสแกนล่าสุด | Bearer JWT | *ไม่มี* | 100 req / 15 min |
 | `GET /uploads/:filename` | ดึงไฟล์รูปภาพหลักฐานที่บันทึกจากกล้อง | Public | *ไม่มี* | ตามขีดจำกัด Express |
+
+> 💡 **หมายเหตุ Activity Log:** เมธอด `GET` ทั้งหมดไม่บันทึกลงตาราง `activity_log` เพื่อลดขนาดฐานข้อมูล (บันทึกเฉพาะฝั่ง POST / PATCH / Auth)
 
 ---
 
@@ -42,10 +46,12 @@
   |---|---|---|---|
   | `page` | integer | `1` | หน้าที่ต้องการแสดง |
   | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `search` | string | - | ค้นหาชื่อกลุ่ม, ชื่อผู้สร้าง หรือ `group_id` |
+  | `is_delete` | boolean | `false` | `true` เพื่อดึงกลุ่มที่ถูก Soft Delete |
 
 - **Request Example**:
   ```http
-  GET /iiot/get/group?page=1&limit=5 HTTP/1.1
+  GET /iiot/get/group?page=1&limit=10&is_delete=false HTTP/1.1
   Authorization: Bearer eyJhbGciOiJIUzI1NiIsIn...
   ```
 
@@ -61,7 +67,10 @@
         "by_user_id": 3,
         "created_at": "2026-10-18T19:05:43.000Z",
         "is_delete": false,
-        "by_user_name": "Gemini"
+        "first_name": "Gemini",
+        "by_user_name": "Gemini",
+        "device_count": 2,
+        "ip_cam_count": 1
       }
     ]
   }
@@ -70,7 +79,7 @@
 ---
 
 ## 2. Get Devices (ดึงรายการอุปกรณ์)
-ดึงรายชื่ออุปกรณ์ RFID และ Camera ทั้งหมดที่ไม่ได้ถูกลบ (`is_delete = false`)
+ดึงรายชื่ออุปกรณ์ RFID และ Camera พร้อมชื่อกลุ่ม (`group_name`) และรายการกล้อง IP Camera ที่อยู่ในกลุ่มเดียวกัน (`ip_cameras`)
 
 - **Endpoint**: `GET /iiot/get/device`
 - **Authentication**: `Bearer <JWT_TOKEN>`
@@ -79,10 +88,15 @@
   |---|---|---|---|
   | `page` | integer | `1` | หน้าที่ต้องการแสดง |
   | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `device_type` | string | - | กรองประเภท (`RFID` หรือ `CAM`) |
+  | `status` | string | - | กรองสถานะ (`true` / `false`) |
+  | `group_id` | integer | - | กรองตาม Group ID |
+  | `search` | string | - | ค้นหาชื่ออุปกรณ์, MAC, IP, สถานที่, ชื่อกลุ่ม หรือกล้องในกลุ่ม |
+  | `is_delete` | boolean | `false` | `true` เพื่อดึงอุปกรณ์ที่ถูก Soft Delete |
 
 - **Request Example**:
   ```http
-  GET /iiot/get/device?page=1&limit=5 HTTP/1.1
+  GET /iiot/get/device?page=1&limit=10&is_delete=false HTTP/1.1
   Authorization: Bearer eyJhbGciOiJIUzI1NiIsIn...
   ```
 
@@ -109,7 +123,9 @@
         "status": false,
         "key_api": "dev_3fe4b975c0779aab62674a004a50a561a68237ebc3a0759a58d2b8a015922a8e",
         "hw_uptime": 0,
-        "by_user_name": "Gemini"
+        "by_user_name": "Gemini",
+        "group_name": "ROOM_TEST_101",
+        "ip_cameras": []
       }
     ]
   }
@@ -118,7 +134,7 @@
 ---
 
 ## 3. Get MQTT Configurations (ดึงรายการการตั้งค่า MQTT)
-ดึงการตั้งค่า MQTT Broker, Topic และบัญชีเชื่อมต่อประจำแต่ละกลุ่ม
+ดึงการตั้งค่า MQTT Broker, Topic และบัญชีเชื่อมต่อประจำแต่ละกลุ่ม พร้อม `group_name`
 
 - **Endpoint**: `GET /iiot/get/mqtt`
 - **Authentication**: `Bearer <JWT_TOKEN>`
@@ -127,6 +143,8 @@
   |---|---|---|---|
   | `page` | integer | `1` | หน้าที่ต้องการแสดง |
   | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `group_id` | integer | - | กรองตาม Group ID |
+  | `search` | string | - | ค้นหา `topic`, `user_mqtt` หรือ `group_name` |
 
 - **Request Example**:
   ```http
@@ -167,6 +185,8 @@
   |---|---|---|---|
   | `page` | integer | `1` | หน้าที่ต้องการแสดง |
   | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `status` | string | - | กรองตามสถานะ (`active`, `pending`, `stolen`) |
+  | `search` | string | - | ค้นหา `epc`, ชื่อสิ่งของ (`tag`) หรือชื่อผู้ผูก |
 
 - **Request Example**:
   ```http
@@ -197,7 +217,7 @@
 ---
 
 ## 5. Get Logs (ดึงประวัติการสแกนบัตร RFID พร้อมรูปภาพ)
-ดึงประวัติการตรวจจับแท็ก RFID ล่าสุด โดยระบบจะเชื่อมตาราง (`LEFT JOIN`) กับ `log_images` เพื่อคืนค่า `image_path` ของกล้องให้ทันที
+ดึงประวัติการตรวจจับแท็ก RFID ล่าสุด โดยเชื่อมตาราง `log_images`, `map_tag` และ `device_info`
 
 - **Endpoint**: `GET /iiot/get/log`
 - **Authentication**: `Bearer <JWT_TOKEN>`
@@ -206,10 +226,12 @@
   |---|---|---|---|
   | `page` | integer | `1` | หน้าที่ต้องการแสดง |
   | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `device_id` | integer | - | กรองตาม ID ของเครื่องอ่าน |
+  | `search` | string | - | ค้นหา `epc`, `tag`, ชื่ออุปกรณ์ หรือสถานที่ |
 
 - **Request Example**:
   ```http
-  GET /iiot/get/log?page=1&limit=5 HTTP/1.1
+  GET /iiot/get/log?page=1&limit=10 HTTP/1.1
   Authorization: Bearer eyJhbGciOiJIUzI1NiIsIn...
   ```
 
@@ -225,15 +247,12 @@
         "epc_id": 85,
         "distance": 2.0,
         "time_stamp": "2026-10-17T08:29:45.000Z",
-        "image_path": "/uploads/cam_1791997624480-529956532.jpg"
-      },
-      {
-        "log_id": 135,
-        "device_id": 1,
-        "epc_id": 85,
-        "distance": 2.0,
-        "time_stamp": "2026-10-17T08:28:40.000Z",
-        "image_path": null
+        "image_path": "/uploads/cam_1791997624480-529956532.jpg",
+        "epc": "E280116060000215467151CC",
+        "tag": "บัตรนักศึกษา",
+        "tag_status": "active",
+        "device_name": "RFID_Reader_1",
+        "local": "Building 5 Floor 9"
       }
     ]
   }
@@ -294,8 +313,12 @@
 - **Query Parameters**:
   | Parameter | Type | Default | Description |
   |---|---|---|---|
-  | page | integer | 1 | หน้าที่ต้องการดึงข้อมูล |
-  | limit | integer | 10 | จำนวนรายการต่อหน้า |
+  | `page` | integer | `1` | หน้าที่ต้องการดึงข้อมูล |
+  | `limit` | integer | `10` | จำนวนรายการต่อหน้า |
+  | `status` | string | - | กรองสถานะ (`true` / `false`) |
+  | `group_id` | integer | - | กรองตาม Group ID |
+  | `search` | string | - | ค้นหาชื่อกล้อง, IP, MAC, สถานที่ หรือชื่อกลุ่ม |
+  | `is_delete` | boolean | `false` | `true` เพื่อดึงกล้องที่ถูก Soft Delete |
 
 - **Request Example**:
   `http
@@ -336,7 +359,33 @@
 
 ---
 
-## 8. การดึงไฟล์รูปภาพจาก Server ไปแสดงผลที่ Dashboard
+## 8. Get My Profile (ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบัน)
+ดึงข้อมูลบัญชีของผู้ใช้ที่กำลังล็อกอินอยู่จาก JWT Token (ไม่คืนค่า `password` และ `token`)
+
+- **Endpoint**: `GET /iiot/get/me`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Query Parameters**: *ไม่มี*
+- **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "status": 200,
+    "data": {
+      "user_id": 3,
+      "university_id": "67199999",
+      "first_name": "Gemini",
+      "last_name": "Flash3.8",
+      "role": "teacher",
+      "created_at": "2026-10-18T19:05:34.000Z",
+      "last_login_at": "2026-10-18T19:31:33.000Z",
+      "is_delete": false
+    }
+  }
+  ```
+
+---
+
+## 9. การดึงไฟล์รูปภาพจาก Server ไปแสดงผลที่ Dashboard
 
 ### 🖼️ Endpoint ให้บริการรูปภาพ (Static Asset Serving)
 Backend ให้บริการไฟล์รูปภาพผ่านเส้นทาง `/uploads/...` ซึ่งชี้ตรงไปยังโฟลเดอร์ `public/uploadsImg/` บน Server

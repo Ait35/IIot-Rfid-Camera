@@ -1,4 +1,4 @@
-﻿# IIoT RFID & Camera Server - System Documentation Hub
+# IIoT RFID & Camera Server - System Documentation Hub
 
 เอกสารระบบศูนย์กลางสำหรับ Backend Server, ระบบ MQTT Broker, ฮาร์ดแวร์ IoT (ESP32 RFID & Camera) และ Web Frontend Dashboard
 
@@ -35,6 +35,7 @@
 ## 🛠️ รายการ Endpoint ทั้งหมดโดยสรุป
 
 ### 🟢 เมธอด GET
+- `GET /iiot/get/me` — ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบันจาก Token
 - `GET /iiot/get/dashboard` — สรุปสถิติระบบและ 10 สแกนล่าสุด
 - `GET /iiot/get/log` — ประวัติการสแกนบัตร RFID พร้อม `image_path`
 - `GET /iiot/get/device` — รายชื่ออุปกรณ์ RFID / CAM

@@ -197,6 +197,9 @@
   | `type` | string | ✅ | ประเภทอุปกรณ์: `"RFID"` หรือ `"CAM"` |
   | `group_id` | number | ✅ | รหัสกลุ่มที่อุปกรณ์สังกัดอยู่ |
   | `local` | string | ✅ | สถานที่ติดตั้ง เช่น `Building 5 Floor 9` |
+  | `ip` | string | ❌ | IPv4 Address ของอุปกรณ์ (ค่าเริ่มต้น `"127.0.0.1"`) |
+  | `subnet` | string | ❌ | Subnet Mask (ค่าเริ่มต้น `"255.255.255.0"`) |
+  | `gate_way` | string | ❌ | Gateway IPv4 (ค่าเริ่มต้น `"127.0.0.1"`) |
 
   ```json
   {
@@ -204,7 +207,10 @@
     "mac": "246F28ABCDEF",
     "type": "RFID",
     "group_id": 7,
-    "local": "Building 5 Floor 9"
+    "local": "Building 5 Floor 9",
+    "ip": "192.168.1.100",
+    "subnet": "255.255.255.0",
+    "gate_way": "192.168.1.1"
   }
   ```
 

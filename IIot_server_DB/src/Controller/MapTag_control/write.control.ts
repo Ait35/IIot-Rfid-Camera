@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { MapTagService } from '../../service/Class_service.js';
+import { Map_tagWrite } from '../../service/TagService/write.tag.js';
 import { UpdateTagInput } from '../../schemas/tag.schema.js';
 
 export const mapTag_update_control = async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const mapTag_update_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: UpdateTagInput = req.body;
-        const mapTag_res = await MapTagService.Write.update_map_tag(inputData, userId, ipAddress, userAgent);
+        const mapTag_res = await Map_tagWrite.update_map_tag(inputData, userId, ipAddress, userAgent);
         
         if (!mapTag_res.success) {
             console.log(mapTag_res);

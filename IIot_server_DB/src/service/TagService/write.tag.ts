@@ -1,4 +1,5 @@
-import { Helper } from '../Class_service.js';
+import Service from '../helper_func.js';
+import { Query } from '../../Repository/helperQuery.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { UpdateTagInput } from '../../schemas/tag.schema.js';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
@@ -12,7 +13,7 @@ export const Map_tagWrite = {
             by_user_id: by_user_id
         };
 
-        return await Helper.Service.executeWithLog(
+        return await Service.executeWithLog(
             'update_Map_tag service',
             'map_tag',
             'UPDATE',
@@ -21,7 +22,7 @@ export const Map_tagWrite = {
                 let result;
 
                 if (is_delete !== undefined && is_delete === true ) {
-                    result = await Helper.Query.set_Default(
+                    result = await Query.set_Default(
                         'map_tag', 'epc_id', [epc_id], ['is_delete'], [true],
                         [], [], ['epc_id', 'epc', 'is_delete', 'created_at'], transaction
                     );
@@ -30,7 +31,7 @@ export const Map_tagWrite = {
                 }
 
                 } else if (is_delete !== undefined && is_delete === false) {
-                    result = await Helper.Query.Tran_SetDelete('map_tag', 'epc_id', epc_id, is_delete, transaction);
+                    result = await Query.Tran_SetDelete('map_tag', 'epc_id', epc_id, is_delete, transaction);
                     await QueryRedis.setCache(result.data.epc, 'epc', result.data);
 
                 } else {

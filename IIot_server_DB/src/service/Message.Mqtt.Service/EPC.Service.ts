@@ -1,17 +1,18 @@
-import { InsertData } from '../../Repository/insertQuery.js';
-import { Helper } from '../Class_service.js';
+import { InsertData } from '../../Repository/insertQuery/helper.insert.Query.js';
+import Service from '../helper_func.js';
 import { PoolClient } from 'pg';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
 import { ActivityLogService } from '../../Repository/Activity_Log/ActivityQuery.js';
+import { insertOrUpdateMapTag } from '../../Repository/insertQuery/insert.tag.Query.js';
 
 export const insertEcpAndEcpLog = async ( payload: any, dataOJB:any ,logOJB : any) => {
         try{
         console.log("----- InsertRfidLog chack Cache -----");
-        const result = await Helper.Service.ChackCacheAndSave('epc', dataOJB.epc, 'map_tag', 'epc');
+        const result = await Service.ChackCacheAndSave('epc', dataOJB.epc, 'map_tag', 'epc');
         
         if(result.success){
             // console.log('----- Data in found in DB or cache -----');
-            return await Helper.Service.executeWithLog('Insert log_rfid', 'log_rfid', 'INSERT', null ,
+            return await Service.executeWithLog('Insert log_rfid', 'log_rfid', 'INSERT', null ,
                 async (transaction: PoolClient)=>{
                     //เอา ecp id ที่เจอใน cache โดยที่ไม่ต้องลง DB เพื่อไปดูว่า ecp นี้ id, tag อะไร
                     //แต่ถ้าไม่เจอใน cache จะต้องลง DB ใน ChackCacheAndSave มีการหาใน DB อยู่แล้ว แล้ว save ลง cache ไปเลย
@@ -33,24 +34,11 @@ export const insertEcpAndEcpLog = async ( payload: any, dataOJB:any ,logOJB : an
         }  
         //กรณีที่ epc ไม่พบใน cache, DB มันจะ insert ecp
         // console.log('----- Data not found in DB or cache -----');
-        return await Helper.Service.executeWithLog('Insert map_Tag', 'map_tag', 'INSERT', null , 
+        return await Service.executeWithLog('Insert map_Tag', 'map_tag', 'INSERT', null , 
             async (transaction: PoolClient)=>{
-                let res_query;
-                try {
-                    res_query = await InsertData('map_tag', dataOJB, transaction);
-                } catch (err: any) {
-                    // ถ้าเจอ Error ว่าข้อมูลซ้ำ
-                    if (err.cause?.code === '23505') {
-                        // ให้ไป SELECT ดึงข้อมูลแถวที่มีอยู่แล้วมาแทนเลย ไม่ต้องแครช
-                        const existing = await transaction.query(
-                            'SELECT * FROM map_tag WHERE epc = $1 FOR UPDATE;', 
-                            [dataOJB.epc] //FOR UPDATE คือล็อคไว้ กัน EPC เข้ามาพร้อมกันในเสี้ยววินาที Transaction เลยยังไม่ทันล็อค
-                        );
-                        res_query = { data: existing.rows[0] };
-                    } else {
-                        throw err;
-                    }
-                }
+                // ใช้ ON CONFLICT (epc) DO UPDATE เพื่อกัน error 23505 (transaction abort)
+                // และถ้าเป็นบัตรที่เคยลบ จะกู้คืนเป็น is_delete = FALSE 
+                const res_query = await insertOrUpdateMapTag(dataOJB, transaction);
 
                 logOJB.epc_id = res_query.data.epc_id;
                 const insert_log = await InsertData('log_rfid', logOJB, transaction);

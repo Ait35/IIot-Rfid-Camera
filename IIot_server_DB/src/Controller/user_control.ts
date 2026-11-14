@@ -3,6 +3,7 @@ import { SigninService } from '../service/AccoutService/sigin_source.js';
 import { LoginService } from '../service/AccoutService/login_source.js';
 import { LogoutService } from '../service/AccoutService/logout_source.js';
 import { update_acc } from '../service/AccoutService/update.acc.js';
+import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
 import { LoginInput, SigninInput, UpdateAccountInput } from '../schemas/auth.schema.js';
 
 export const Signin_control = async (req: Request, res: Response) => {
@@ -113,5 +114,26 @@ export const update_acc_control = async (req: Request, res: Response) => {
         res.status(500).json({ error: 'error in update_acc control' });
     } finally {
         console.log(`============================================`);
+    }
+};
+
+export const get_my_profile_control = async (req: Request, res: Response) => {
+    console.log('----- API action: get_my_profile control -----');
+    try {
+        const userId = (req as any).payload?.user_id;
+        if (!userId) {
+            return res.status(401).json({ success: false, status: 401, error: 'Unauthorized: Missing user authentication' });
+        }
+        const userRes = await getData('users', 'user_id', Number(userId), true);
+        if (!userRes.success || !userRes.data) {
+            return res.status(404).json({ success: false, status: 404, error: 'User not found' });
+        }
+        const user = Array.isArray(userRes.data) ? { ...userRes.data[0] } : { ...userRes.data };
+        delete user.password;
+        delete user.token;
+        return res.status(200).json({ success: true, status: 200, data: user });
+    } catch (error) {
+        console.error('error in get_my_profile_control:', error);
+        return res.status(500).json({ success: false, status: 500, error: 'Internal Server Error' });
     }
 };

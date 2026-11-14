@@ -1,5 +1,6 @@
-import { Helper } from '../Class_service.js';
-import { InsertData } from '../../Repository/insertQuery.js';
+import Service from '../helper_func.js';
+import { Query } from '../../Repository/helperQuery.js';
+import { InsertData } from '../../Repository/insertQuery/helper.insert.Query.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { CreateGroupInput, UpdateGroupInput } from '../../schemas/group.schema.js';
 import { updataTatalGroup } from '../../index.js';
@@ -12,7 +13,7 @@ export const GroupWrite = {
             by_user_id: by_user_id
         };
         
-        return await Helper.Service.executeWithLog(
+        return await Service.executeWithLog(
             'post_device group', 'device_group', 'INSERT', by_user_id,
             async (transaction) => {
                 const res_query = await InsertData('device_group', req, transaction);
@@ -31,13 +32,13 @@ export const GroupWrite = {
         const { group_id, is_delete, ...updatePayload } = inputData;
         const action = is_delete !== undefined ? (is_delete ? 'DELETE' : 'RESTORE') : 'UPDATE';
 
-        return await Helper.Service.executeWithLog(
+        return await Service.executeWithLog(
             'update_device group', 'device_group', action, by_user_id,
             async (transaction) => {
                 let result;
 
                 if (is_delete !== undefined) {
-                    result = await Helper.Query.Tran_SetDelete('device_group', 'group_id', group_id, is_delete, transaction);
+                    result = await Query.Tran_SetDelete('device_group', 'group_id', group_id, is_delete, transaction);
                     await updataTatalGroup(transaction);
                 } else {
                     result = await updateData('device_group', 'group_id', group_id, true, updatePayload, transaction);

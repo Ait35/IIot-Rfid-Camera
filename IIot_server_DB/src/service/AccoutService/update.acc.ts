@@ -1,4 +1,5 @@
-import { Helper } from '../Class_service.js';
+import Service from '../helper_func.js';
+import { Query } from '../../Repository/helperQuery.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
 import { UpdateAccountInput } from '../../schemas/auth.schema.js';
@@ -11,7 +12,7 @@ export const update_acc = async (
 ) => {
     const { is_delete, ...updatePayload } = inputData;
 
-    return await Helper.Service.executeWithLog(
+    return await Service.executeWithLog(
         'update_User', 'users', 'UPDATE', String(user_id),
         async (transaction) => {
             let result: any = null;
@@ -21,7 +22,7 @@ export const update_acc = async (
             }
 
             if (is_delete !== undefined) {
-                result = await Helper.Query.Tran_SetDelete('users', 'user_id', user_id, is_delete, transaction);
+                result = await Query.Tran_SetDelete('users', 'user_id', user_id, is_delete, transaction);
                 if (is_delete === true) {
                     await QueryRedis.delCache(String(user_id), 'session');
                 }

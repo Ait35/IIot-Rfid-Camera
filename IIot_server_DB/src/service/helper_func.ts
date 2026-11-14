@@ -9,7 +9,7 @@ import {PoolClient} from 'pg';
 import { db } from '../Infra/connect_db.js';
 import { ActivityLogService } from '../Repository/Activity_Log/ActivityQuery.js';
 import { QueryRedis } from '../Infra/Redis/cache.js';
-import { getData } from '../Repository/ReadQuery.js';
+import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
 
 const execPromise = util.promisify(exec);
 
@@ -58,17 +58,14 @@ const Service = {
         const randomString = crypto.randomBytes(32).toString('hex');
         return `dev_${randomString}`;
     },
-    async readAndWriteLog (
-        actionName : string,
-        table : string,
-        by_user_id: number | null,
-        target_id: number | null,
-        Callfunction:() => Promise<{ result: any; logPayload: any }>
+    async executeRead (
+        actionName: string,
+        Callfunction: () => Promise<any>
     ){
         console.log(`----- API action: ${actionName} -----`);
-         
+
         try{
-            const {result, logPayload} = await Callfunction();
+            const result = await Callfunction();
             // ตรวจสอบว่าเป็น Array ไหม ถ้าไม่ใช่ให้แปลงเป็น Array ชั่วคราวเพื่อทำ map
             const isArray = Array.isArray(result);
             let cleanData: any = null;
@@ -83,26 +80,10 @@ const Service = {
                 cleanData = isArray ? mapped : mapped[0];
             }
 
-            if(logPayload.device_id){
-                target_id = logPayload.device_id;
-            }
-            const System_log = await ActivityLogService.Insert_logAction(
-                Number(by_user_id) || null,
-                'GET',
-                table, 
-                target_id,
-                logPayload
-            );
-            if(!System_log.success){
-                console.log(System_log);
-                return System_log;
-            }
-
-            console.log('----- Add System Log Successful! -----');
             console.log(' ✅ Get Successful! ');
-            return { success: true, status: 200, data: isArray ? cleanData : cleanData };
+            return { success: true, status: 200, data: cleanData };
         }catch(error : any){
-            console.error(`❌ Database ROLLBACK [${table} - GET]:`,error);
+            console.error(`❌ Database Error [${actionName} - GET]:`,error);
             return { success: false, status: error.status || 500, error: error.message };
         }
     },

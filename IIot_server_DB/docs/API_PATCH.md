@@ -126,7 +126,9 @@ Content-Type: application/json
   | `ip` | string | ❌ | IP Address |
   | `subnet` | string | ❌ | Subnet Mask |
   | `gate_way` | string | ❌ | Gateway |
-  | `key_api` | string | ❌ | รีเซ็ต Key API ประจำเครื่อง |
+  | `status` | boolean | ❌ | สถานะ Online/Offline |
+  | `key_api` | string | ❌ | กำหนด Key API ประจำเครื่องเอง |
+  | `refresh_key_api` | boolean | ❌ | ส่ง `true` เพื่อให้เซิร์ฟเวอร์สุ่มสร้าง `key_api` ใหม่ให้อัตโนมัติ |
   | `is_delete` | boolean | ❌ | `true` เพื่อลบ, `false` เพื่อกู้คืน |
 
   *ตัวอย่าง Body:*

@@ -1,5 +1,5 @@
 import { Response , Request} from 'express';
-import { MapTagService } from '../../service/Class_service.js';
+import { TagRead } from '../../service/TagService/read.tag.js';
 
 export const Tag_get_control = async (req:Request, res:Response) => {
     console.log('----- API action: get group control -----');
@@ -7,16 +7,17 @@ export const Tag_get_control = async (req:Request, res:Response) => {
     //ดักจัลค่า falsy แล้วตั้งตามค่าขวา
     const page = parseInt(req.query.page as string) || 1;
     const limit = parseInt(req.query.limit as string) || 10;
+    //ค้นหาจ๊ะ
+    const rawStatus = (req.query.status as string)?.trim().toLowerCase();
+    const status = ['active', 'pending', 'stolen'].includes(rawStatus) ? rawStatus : undefined;
+    const search = (req.query.search as string)?.trim() || undefined;
 
-    const ipAddress = req.ip || 'Unknown IP';
-    const userAgent = req.headers['user-agent'] || 'Unknown Group';
-    
     if(!userId){
         console.log('Missing user id');
         return res.status(400).json({error: 'Missing user id'});
     }
     try {
-        const mapTag_res = await MapTagService.Read.get_tag(page , limit , userId , ipAddress , userAgent);
+        const mapTag_res = await TagRead.get_tag(page, limit, status, search);
         if(!mapTag_res.success){
             console.log(mapTag_res);
             return res.status(mapTag_res.status).json(mapTag_res);

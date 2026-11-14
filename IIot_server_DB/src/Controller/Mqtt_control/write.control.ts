@@ -1,5 +1,5 @@
 import { Response, Request } from 'express';
-import { MqttService } from '../../service/Class_service.js';
+import { MqttWrite } from '../../service/mqttService/write.mqtt.js';
 import { CreateMqttInput, UpdateMqttInput } from '../../schemas/mqtt.schema.js';
 
 export const MPost_control = async (req: Request, res: Response) => {
@@ -15,7 +15,7 @@ export const MPost_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: CreateMqttInput = req.body;
-        const mqtt_res = await MqttService.Write.post_mqtt(inputData, userId, ipAddress, userAgent);
+        const mqtt_res = await MqttWrite.post_mqtt(inputData, userId, ipAddress, userAgent);
         
         if (!mqtt_res.success) {
             console.log(mqtt_res);
@@ -42,7 +42,7 @@ export const Mqtt_updata_control = async (req: Request, res: Response) => {
 
     try {
         const inputData: UpdateMqttInput = req.body;
-        const mqtt_res = await MqttService.Write.update_mqtt(inputData, userId, ipAddress, userAgent);
+        const mqtt_res = await MqttWrite.update_mqtt(inputData, userId, ipAddress, userAgent);
         
         if (!mqtt_res.success) {
             console.log(mqtt_res);
