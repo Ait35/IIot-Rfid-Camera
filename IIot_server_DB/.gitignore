@@ -1,9 +1,16 @@
 .env
 node_modules/
 .vscode/
-public/uploadsImg/*
-!public/uploadsImg/dummy.txt
 scratch/
 # ดักไว้ เพราะ มันอาจจะอย่ใน ram
 dist/
 build/
+*.tsbuildinfo
+
+# Frontend build output (generated into public/ by npm run build:ui) & Vite caches
+public/*
+!public/uploadsImg/
+public/uploadsImg/*
+!public/uploadsImg/dummy.txt
+frontend/.vite/
+frontend/.env*
