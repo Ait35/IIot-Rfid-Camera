@@ -6,7 +6,7 @@ namespace Rfid{
 
     bool readRfid() ;
     void chackType();
-    int get_distance(int rssiRaw);
+    float get_distance(int rssiRaw);
     void parsedFrame();
 
 }

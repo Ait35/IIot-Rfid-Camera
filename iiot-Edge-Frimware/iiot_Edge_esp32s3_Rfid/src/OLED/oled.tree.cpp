@@ -101,7 +101,7 @@ void OLED::setUp_any(String what_setup, bool state, int dot_count)
                 for (int i = 0; i < dot_count; i++) { _display.print("."); }
             
                 _display.setCursor(10, 48);
-                _display.print("IP: ");
+                _display.print("MCU IP: ");
                 _display.print(WiFi.localIP());
             }
             break;
@@ -309,13 +309,13 @@ void OLED::randerWiFiStatus(int slidePage)
         _display.setCursor(3,38);
         _display.println("PASS: " + device_info.apPassword);
         _display.setCursor(3,53);
-        _display.println("IP: " + device_info.apIP);
+        _display.println("IP: " + device_info.IP);
         break;
     case 1:
         _display.setCursor(3,23);
-        _display.println("IP: " + device_info.apIP);
+        _display.println("IP: " + device_info.IP);
         _display.setCursor(3,38);
-        _display.println("gateway: " + device_info.apIP);
+        _display.println("gateway: " + device_info.gateway);
         _display.setCursor(3,53);
         _display.setFont(&TomThumb);
         _display.println("hostname: " + device_info.apHostname);
@@ -453,108 +453,3 @@ void OLED::Restart()
     // ดับเครื่อง
     ESP.restart();
 }
-
-// void OLED::randerReset(int select)
-// {
-//     //encoder.setBoundaries(0, this->ActionPointer->Choice-1 , true);
-//     this->NextAndPrev (select);
-//     this->randerHeader();
-//     _display.setTextSize(1);
-//     _display.setTextColor(WHITE);
-
-//     _display.setCursor(95, 0);
-//     _display.print("(1/1)");
-//     switch (select)
-//     {
-//     case 0:
-//         _display.setCursor(5,23);
-//         _display.println("=> Reset WiFi");
-//         _display.setCursor(5,38);
-//         _display.println("Reset API");
-//         _display.setCursor(5,53);
-//         _display.println("Reset All");
-//         Choice_Reset_FromOLED = select + 1;
-//         break;
-//     case 1:
-//         _display.setCursor(5,23);
-//         _display.println("Reset WiFi");
-//         _display.setCursor(5,38);
-//         _display.println("=> Reset API");
-//         _display.setCursor(5,53);
-//         _display.println("Reset All");
-//         Choice_Reset_FromOLED = select + 1;
-//         break;  
-//     case 2:
-//         _display.setCursor(5,23);
-//         _display.println("Reset WiFi");
-//         _display.setCursor(5,38);
-//         _display.println("Reset API");
-//         _display.setCursor(5,53);
-//         _display.println("=> Reset All");
-//         Choice_Reset_FromOLED = select + 1;
-//         break;
-//     default:
-//         Serial.println("❌ No action");
-//         break;
-//     }
-//     _display.display();
-// }
-
-// void OLED::randerResetPopUp(int select)
-// {
-//     _display.fillRect(10, 10, 108, 44, BLACK);
-//     _display.drawRect(10, 10, 108, 44, WHITE);
-    
-//     _display.setTextSize(1);
-//     _display.setTextColor(WHITE);
-
-//     _display.setCursor((128 - (13 * 6)) / 2, 18);
-//     _display.println("Are you sure?");
-//     int y_pos = 38; 
-    
-//     switch (select)
-//     {
-//     case 0:
-//         _display.setCursor(20, y_pos);
-//         _display.println("=> Yes");
-        
-//         _display.setCursor(85, y_pos);
-//         _display.println("   No");
-//         conFrimReset = 1;
-//         break;   
-//     case 1:
-//     default:
-//         _display.setCursor(20, y_pos);
-//         _display.println("   Yes");
-        
-//         _display.setCursor(85, y_pos);
-//         _display.println("=> No");
-//         conFrimReset = 2;
-//         break;
-//     }
-//     _display.display();
-// }
-
-// void OLED::MenuActionReset() {
-//     switch (Choice_Reset_FromOLED)
-//     {
-//     case 1:
-//         Serial.println("Reset WiFi");
-//         Helper::claer_ALL_EEprom("wifi-creds");
-//         break;
-//     case 2:
-//         Serial.println("Reset API");
-//         Helper::claer_ALL_EEprom("key_api-creds");
-//         break;
-//     case 3:
-//         Serial.println("Reset All");
-//         Helper::claer_ALL_EEprom("wifi-creds");
-//         Helper::claer_ALL_EEprom("key_api-creds");
-//         break;
-//     default:
-//         Serial.println("Cancel Reset");
-//         Choice_Reset_FromOLED = 0;
-//         this->moveUp();
-//         break;
-//     }
-// }

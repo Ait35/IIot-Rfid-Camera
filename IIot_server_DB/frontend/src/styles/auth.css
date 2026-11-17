@@ -1,0 +1,135 @@
+/* ==========================================================================
+   Authentication Views (Login & Signin)
+   ========================================================================== */
+
+.auth-page-container {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px 16px;
+  background: var(--canvas);
+}
+
+.auth-card {
+  max-width: 460px;
+  width: 100%;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 34px 30px;
+  box-shadow: var(--shadow-md);
+  position: relative;
+  overflow: hidden;
+}
+
+.auth-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 4px;
+  background: var(--pink);
+}
+
+.auth-card-header {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.auth-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--pink-soft);
+  color: var(--pink);
+  font-size: 10.5px;
+  font-weight: 800;
+  padding: 3px 9px;
+  border-radius: 999px;
+  letter-spacing: 0.05em;
+  margin-bottom: 8px;
+}
+
+.auth-card-header h2 {
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.auth-card-header p {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 3px;
+}
+
+.auth-form {
+  display: grid;
+  gap: 18px;
+}
+
+.quick-accounts-box {
+  margin-top: 20px;
+  padding: 12px;
+  background: var(--canvas);
+  border: 1px dashed #cbd5e1;
+  border-radius: var(--radius-sm);
+}
+
+.quick-accounts-title {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 10.5px;
+  font-weight: 750;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.quick-chip {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.quick-chip:hover {
+  background: var(--pink-soft);
+  border-color: var(--pink);
+  color: var(--pink);
+}
+
+.auth-card-foot {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--pink);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.info-banner {
+  background: var(--pink-soft);
+  border: 1px solid #ffd0e3;
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  gap: 8px;
+  font-size: 12px;
+  color: #70003b;
+  margin-bottom: 16px;
+}

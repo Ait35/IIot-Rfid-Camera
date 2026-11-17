@@ -1,4 +1,5 @@
 #include "rfid_config.h"
+#include <math.h>
 
 // uint8_t mockData[] = {0x52, 0x46, 0x02, 0x00, 0x00, 0x80, 0x00, 0x13, 0x50, 0x11, 0x01, 0x0C, 0xE2, 0x80, 0x11, 0x60, 0x60, 0x00, 0x02, 0x15, 0x46, 0x71, 0x51, 0xCC, 0x05, 0x01, 0x87, 0xBA};
 uint8_t mockData[] = {};
@@ -21,23 +22,28 @@ uint8_t mockRead() {
 }
 
 bool Rfid::readRfid() {
-        while (mockAvailable() > 0){
+        while (Serial2.available() > 0){
             lastByteTime = millis();
-            // uint8_t rfid_value = Serial2.read();
-            uint8_t rfid_value = mockRead();
+            uint8_t rfid_value = Serial2.read();
 
             if(frameBuffer.empty() && rfid_value != 0x52){
-                frameBuffer.clear();
-                return false;
+                continue; // ข้ามไบต์ขยะไปหา 0x52 ('R') ทันที ไม่ต้องรอรอบ loop ถัดไป
             }
             frameBuffer.push_back(rfid_value);
+
+            // เช็กไบต์ที่ 2 ต้องเป็น 0x46 ('F') เท่านั้น ป้องกันเฟรมค้างตอนสัญญาณอ่อน
+            if(frameBuffer.size() == 2 && frameBuffer[1] != 0x46){
+                frameBuffer.clear();
+                if(rfid_value == 0x52) frameBuffer.push_back(0x52);
+                continue;
+            }
             
             if(frameBuffer.size() >= 8){ 
-                /*เลือน index 6 ไปทางซ้าย 8 บิต เพื่อเอา index 7 มา + เข้าข้างหลัง uint8_t = byte = 8 bit
-                เช่น เก็บ 1 uint8_t(index 6) ที่มาจาก Serial ลง int (4 uint8_t) = 0*8(1byte) 0*8(1byte) 0*8(1byte) 0000 0001(1byte) 
-                หลัง shift = 0*8(1byte) 0*8(1byte) 0000 0001(1byte) 0*8(1byte) ประมาณนี้ แล้วเอา index 7 = 1100 1010 ไปใส่ท้ายสุด 
-                จะกลายเป็น = 0*8(1byte) 0*8(1byte) 0000 0001(1byte) 1100 1010(1byte) ก็จะได้ความยาวที่เอา 2 uint8_t มาต่อกัน*/
                 int Data_length = (frameBuffer[6] << 8 | frameBuffer[7]) + 9;
+                if (Data_length > 64 || Data_length < 10) {
+                    frameBuffer.clear();
+                    continue;
+                }
 
                 if (frameBuffer.size() == Data_length){
                     uint8_t check_sum = 0;
@@ -74,23 +80,56 @@ void Rfid::chackType()
     }
 }
 
-int Rfid::get_distance(int rssiRaw)
+float Rfid::get_distance(int rssiRaw)
 {
-    if (rssiRaw >= 140) {
-        return 1; // คลื่นแรงมาก = 1 เมตร
-    } 
-    else if (rssiRaw >= 120) {
-        return 2; // คลื่นแรง = 2 เมตร
-    } 
-    else if (rssiRaw >= 90) {
-        return 3; // คลื่นปานกลาง = 3 เมตร
-    } 
-    else if (rssiRaw >= 70) {
-        return 4; // คลื่นอ่อน = 4 เมตร
-    } 
-    else {
-        return 5; // คลื่นอ่อนมาก/ปลายระยะ = 5 เมตร
+    if (rssiRaw <= 0) {
+        return 0.0f;
     }
+
+    // 1. กรองสัญญาณแบบ Peak-Hold (เกาะค่าสัญญาณแรงสุด + กันสัญญาณดรอปวูบจากมือบัง/คลื่นสะท้อน)
+    static String lastTag = "";
+    static float filteredRssi = 0.0f;
+    static float stableDistance = 0.0f;
+    static unsigned long lastReadMs = 0;
+
+    unsigned long now = millis();
+    // ถ้าเปลี่ยนบัตร หรือเว้นช่วงอ่านเกิน 3 วินาที ให้เริ่มจับค่าใหม่
+    if (rfid_data.tag != lastTag || filteredRssi == 0.0f || (now - lastReadMs > 3000)) {
+        filteredRssi = (float)rssiRaw;
+        lastTag = rfid_data.tag;
+        stableDistance = 0.0f;
+    } else {
+        if ((float)rssiRaw >= filteredRssi) {
+            // ถ้าสัญญาณแรงขึ้น (ค่าจริงไม่โดนคลื่นหักล้าง) ให้ปรับตามทันที 60%
+            filteredRssi = (0.40f * filteredRssi) + (0.60f * (float)rssiRaw);
+        } else {
+            // ถ้าสัญญาณดรอปวูบ (เช่น จาก 179 ตกไป 147 เพราะมือบัง/คลื่นสะท้อน) ให้จำกัดการตกครั้งละไม่เกิน 6 หน่วย และถ่วงน้ำหนักช้าๆ 15%
+            float clampedRaw = ((float)rssiRaw < filteredRssi - 6.0f) ? (filteredRssi - 6.0f) : (float)rssiRaw;
+            filteredRssi = (0.85f * filteredRssi) + (0.15f * clampedRaw);
+        }
+    }
+    lastReadMs = now;
+
+    // 2. สมการ Log-Distance Path Loss ปรับตามช่วงค่าจริงที่บัตรตื่น (158 ถึง 200 -> 5.0m ถึง 0.5m)
+    // เพราะต่ำกว่า ~155 บัตร Passive Tag จะไม่ได้รับพลังงานพอที่จะตื่น (สแกนไม่ติด)
+    const float RSSI_AT_1M   = 188.0f; // ค่า RSSI Raw อ้างอิงที่ระยะ 1.0 เมตร
+    const float SCALE_FACTOR = 42.0f;  // 200->0.5m, 188->1.0m, 180->1.6m, 174->2.2m, 167->3.2m, 158->5.0m
+
+    float distance_m = powf(10.0f, (RSSI_AT_1M - filteredRssi) / SCALE_FACTOR);
+
+    // 3. จำกัดขอบเขตตามสเปกเครื่องอ่าน (0.20 เมตร ถึงสูงสุด 5.00 เมตร)
+    if (distance_m < 0.20f) distance_m = 0.20f;
+    if (distance_m > 5.00f) distance_m = 5.00f;
+
+    // 4. ปัดเศษทศนิยม 1 ตำแหน่ง และมี Deadband 0.25m กันตัวเลขสวิงตอนถือบัตรอยู่ที่เดิม
+    distance_m = roundf(distance_m * 10.0f) / 10.0f;
+    if (fabsf(distance_m - stableDistance) >= 0.25f || stableDistance == 0.0f) {
+        stableDistance = distance_m;
+    }
+
+    Serial.printf("📶 RSSI Raw: %d (Filtered: %.1f) -> 📏 Distance: %.2f m\n",
+                  rssiRaw, filteredRssi, stableDistance);
+    return stableDistance;
 }
 
 void Rfid::parsedFrame() {

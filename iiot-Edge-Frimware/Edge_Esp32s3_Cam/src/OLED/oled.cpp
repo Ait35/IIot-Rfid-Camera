@@ -101,7 +101,7 @@ void OLED::setUp_any(String what_setup, bool state, int dot_count)
                 for (int i = 0; i < dot_count; i++) { _display.print("."); }
             
                 _display.setCursor(10, 48);
-                _display.print("IP: ");
+                _display.print("esp IP: ");
                 _display.print(WiFi.localIP());
             }
             break;

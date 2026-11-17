@@ -1,9 +1,7 @@
 #include "Mqtt_service.h"
+#include "./Network_config/WebServerSetup.h"
 
-Mqtt_service::Mqtt_service()
-{   
-    
-}
+Mqtt_service::Mqtt_service(){}
 
 void Mqtt_service::setupMqtt(
     String user, String pass,
@@ -11,8 +9,7 @@ void Mqtt_service::setupMqtt(
     String topic_pub_rfid, 
     String topic_sub_private,
     String topic_sub_broadcats
-    // int port
-    // const char* server
+
     )
 {
     if(WiFi.status() != WL_CONNECTED){
@@ -30,10 +27,10 @@ void Mqtt_service::setupMqtt(
     // this->server = server;
     this->clientId = "ESP32Client-" + String(random(0xffff), HEX);
     Serial.println("clientId: " + this->clientId);
-    Serial.println("HostServer: " + String(HostServer));
-    Serial.println("port: " + String(port));
+    Serial.println("HostServer: " + String(serverMqtt));
+    Serial.println("port: " + String(portServer));
 
-    client.setServer(this->HostServer, this->port);
+    client.setServer(serverMqtt, portServer);
     client.setKeepAlive(30);
 }
 
@@ -73,7 +70,6 @@ bool Mqtt_service::connectMqtt()
       Serial.print(client.state());
       return false;
     }
-   return false;
 }
 
 void Mqtt_service::reconnect(OLED* oled)
@@ -103,6 +99,7 @@ void Mqtt_service::reconnect(OLED* oled)
     }
 
     while (!client.connected()) {
+        WebService::loopWebServer();
         if(WiFi.status() != WL_CONNECTED){
             ESP.restart();
         }
@@ -120,7 +117,7 @@ void Mqtt_service::reconnect(OLED* oled)
             countToRestartESP++;
             if (countToRestartESP >= 10) {
                 Serial.println("Failed to reconnect to MQTT, restart ESP");
-                ESP.restart();
+                //ESP.restart();
             }
 
             if (this->connectMqtt()) {

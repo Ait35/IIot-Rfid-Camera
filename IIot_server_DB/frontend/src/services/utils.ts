@@ -1,5 +1,5 @@
-import type { DeviceInfo, JoinedIPCam } from '../types';
-import type { HardwareDetailItem } from '../components/DeviceDetailModal';
+import type { DeviceInfo, JoinedIPCam, SseDeviceUpdateEvent } from '../types';
+import type { HardwareDetailItem } from '../features/devices/components/DeviceDetailModal';
 
 /**
  * ปรับ Path รูปภาพให้ถูกต้องตามที่ Express Static File เสิร์ฟไว้ที่ /uploads
@@ -51,40 +51,20 @@ export function checkDeviceStatus(device: Pick<DeviceInfo, 'status' | 'last_acti
     };
   }
 
-  if (!device.last_active_at) {
-    return {
-      isOnline: false,
-      statusLabel: 'ออฟไลน์ (Offline)',
-      badgeClass: 'badge-offline',
-      detail: 'ไม่มีบันทึกเวลา Active ล่าสุด',
-    };
-  }
-
-  const lastActiveTime = new Date(device.last_active_at).getTime();
-  if (isNaN(lastActiveTime)) {
-    return {
-      isOnline: false,
-      statusLabel: 'ออฟไลน์ (Offline)',
-      badgeClass: 'badge-offline',
-      detail: 'เวลารายงานไม่ถูกต้อง',
-    };
-  }
-
-  const diffMinutes = (Date.now() - lastActiveTime) / (1000 * 60);
-  if (diffMinutes > 10) {
-    return {
-      isOnline: false,
-      statusLabel: 'ออฟไลน์ (Offline)',
-      badgeClass: 'badge-offline',
-      detail: `ขาดการติดต่อ (${Math.round(diffMinutes)} นาทีที่แล้ว)`,
-    };
+  let detail = 'พร้อมทำงาน';
+  if (device.last_active_at) {
+    const lastActiveTime = new Date(device.last_active_at).getTime();
+    if (!isNaN(lastActiveTime)) {
+      const diffMinutes = Math.max(0, Math.round((Date.now() - lastActiveTime) / (1000 * 60)));
+      detail = `พร้อมทำงาน (Active ${diffMinutes} นาทีที่แล้ว)`;
+    }
   }
 
   return {
     isOnline: true,
     statusLabel: 'ออนไลน์ (Online)',
     badgeClass: 'badge-online',
-    detail: `พร้อมทำงาน (Active ${Math.round(diffMinutes)} นาทีที่แล้ว)`,
+    detail,
   };
 }
 
@@ -176,4 +156,96 @@ export function extractGroupOptions(
     }
   }
   return Array.from(map.entries()).sort((a, b) => a[0] - b[0]);
+}
+
+/**
+ * อัปเดตสถานะอุปกรณ์และกล้อง IP Camera ที่ซ้อนอยู่ภายในจาก Event `DevicesUpdate` ของ SSE
+ */
+export function applyDeviceSseUpdates(
+  devices: DeviceInfo[],
+  updates: SseDeviceUpdateEvent[]
+): DeviceInfo[] {
+  const deviceMap = new Map<number, Extract<SseDeviceUpdateEvent, { kind: 'device' }>>();
+  const camMap = new Map<number, Extract<SseDeviceUpdateEvent, { kind: 'ip_camera' }>>();
+
+  for (const item of updates) {
+    if (item.kind === 'device') {
+      deviceMap.set(item.device_id, item);
+    } else if (item.kind === 'ip_camera') {
+      camMap.set(item.ip_cam_id, item);
+    }
+  }
+
+  return devices.map((dev) => {
+    const devPatch = deviceMap.get(dev.device_id);
+    let camsChanged = false;
+
+    const nextCams = Array.isArray(dev.ip_cameras)
+      ? dev.ip_cameras.map((cam) => {
+          const camPatch = camMap.get(cam.ip_cam_id);
+          if (!camPatch) return cam;
+          camsChanged = true;
+          return {
+            ...cam,
+            status: camPatch.status,
+            last_active_at: camPatch.last_active_at,
+          };
+        })
+      : dev.ip_cameras;
+
+    if (!devPatch && !camsChanged) return dev;
+
+    return {
+      ...dev,
+      ...(devPatch
+        ? { status: devPatch.status, last_active_at: devPatch.last_active_at }
+        : {}),
+      ip_cameras: nextCams,
+    };
+  });
+}
+
+/**
+ * แปลงเวลา ISO/DB เป็นรูปแบบวันที่-เวลาภาษาไทย
+ */
+export function formatThaiDateTime(
+  dateStr?: string | null,
+  withSeconds = false
+): string {
+  if (!dateStr) return '-';
+  const parsed = new Date(dateStr);
+  if (Number.isNaN(parsed.getTime())) return '-';
+  return parsed.toLocaleString('th-TH', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...(withSeconds ? { second: '2-digit' } : {}),
+  });
+}
+
+/**
+ * รันการทำงานแบบกลุ่ม (Bulk Action) พร้อมนับจำนวนสำเร็จ/ล้มเหลว
+ */
+export async function runBulkAction<T>(
+  items: T[],
+  worker: (item: T) => Promise<{ success: boolean }>
+): Promise<{ successCount: number; failCount: number }> {
+  let successCount = 0;
+  let failCount = 0;
+
+  await Promise.all(
+    items.map(async (item) => {
+      try {
+        const res = await worker(item);
+        if (res.success) successCount++;
+        else failCount++;
+      } catch {
+        failCount++;
+      }
+    })
+  );
+
+  return { successCount, failCount };
 }

@@ -49,7 +49,7 @@ struct MqttInfo {
 
 struct Rfid_data {
     String tag;
-    int distance;
+    float distance;
 };
 WebServer inline server(80);
 inline bool shouldRestartForWiFi = false;

@@ -1,0 +1,175 @@
+/* ==========================================================================
+   Feature Page Styles: History, Devices, Tags & Tag Edit Modal
+   ========================================================================== */
+
+/* Shared Page Headers */
+.history-page,
+.devices-page,
+.tags-page {
+  animation: fadeIn 0.2s ease-in-out;
+}
+
+.page-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 22px;
+}
+
+.page-header-row h2 {
+  font-size: 24px;
+  font-weight: 850;
+  letter-spacing: -0.02em;
+}
+
+.page-sub {
+  color: var(--muted);
+  font-size: 13.5px;
+  margin-top: 4px;
+}
+
+/* History Thumbnails */
+.history-thumb-wrap {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  margin: 0 auto;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+}
+
+.history-thumb-wrap:hover {
+  transform: scale(1.1);
+  border-color: var(--pink);
+}
+
+.history-thumb-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camera-highlight-spec {
+  background: rgba(216, 0, 126, 0.04);
+  border-left: 3px solid var(--pink);
+}
+
+/* Device Summary & Offline Alert */
+.device-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.summary-stat-box {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px;
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-stat-box .stat-num {
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.summary-stat-box .stat-label {
+  font-size: 12px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.offline-alert-banner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius-sm);
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  color: #92400e;
+}
+
+/* Tag Summary 4-Cards Grid */
+.tag-summary-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.stat-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.stat-sub {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+
+.chip-unassigned {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 11px;
+  font-weight: 700;
+  border: 1px solid #fde68a;
+}
+
+@media (max-width: 1024px) {
+  .tag-summary-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* Edit Tag Modal */
+.edit-tag-modal-card {
+  max-width: 520px;
+  width: 100%;
+}
+
+.tag-identity-box {
+  background: #f8fafc;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  padding: 14px 16px;
+}
+
+.tag-identity-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.tag-epc-display {
+  font-size: 18px;
+  font-weight: 850;
+  color: var(--ink);
+  word-break: break-all;
+}
+
+.tag-meta-sub-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  font-size: 11.5px;
+  color: var(--muted);
+  flex-wrap: wrap;
+}

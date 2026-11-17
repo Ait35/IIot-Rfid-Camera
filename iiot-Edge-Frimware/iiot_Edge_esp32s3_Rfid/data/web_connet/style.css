@@ -119,3 +119,44 @@ button#btn-scan {
     background: #dc3545;
     color: white;
 }
+/* ================= Modal Pop-up Styles ================= */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+.modal-overlay.hidden {
+    display: none !important;
+}
+.modal-box {
+    background: white;
+    padding: 25px 30px;
+    border-radius: 8px;
+    text-align: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+    max-width: 85%;
+    width: 300px;
+}
+.modal-box h3 {
+    margin-top: 0;
+    color: #28a745; /* สีเขียว */
+}
+#popup-ip-link {
+    display: inline-block;
+    margin: 15px 0 25px 0;
+    font-size: 20px;
+    font-weight: bold;
+    color: #007bff;
+    text-decoration: none;
+    padding: 10px;
+    background: #f0f8ff;
+    border-radius: 5px;
+    border: 1px dashed #007bff;
+}
+#popup-ip-link:hover {
+    background: #e6f2ff;
+}
