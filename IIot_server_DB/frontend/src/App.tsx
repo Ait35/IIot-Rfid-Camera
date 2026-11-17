@@ -1,22 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
 import { getToken, getUser, setToken, setUser, api, setOnUnauthorized } from './services/api';
+import { applyDeviceSseUpdates } from './services/utils';
+import { useDashboardSse } from './hooks/useDashboardSse';
+import { useToast } from './hooks/useToast';
 import type { User, DashboardStats, RecentScan, DeviceInfo, TagInfo } from './types';
-import { Sidebar } from './components/Sidebar';
-import { Topbar } from './components/Topbar';
-import { Login } from './pages/Login';
-import { Signin } from './pages/Signin';
-import { Dashboard } from './pages/Dashboard';
-import { HistoryPage } from './pages/HistoryPage';
-import { DevicesPage } from './pages/DevicesPage';
-import { DeviceManagerPage } from './pages/DeviceManagerPage';
-import { AddDevicePage } from './pages/AddDevicePage';
-import { GroupsPage } from './pages/GroupsPage';
-import { GroupManagerPage } from './pages/GroupManagerPage';
-import { AddGroupPage } from './pages/AddGroupPage';
-import { TagsPage } from './pages/TagsPage';
-import { ImageModal } from './components/ImageModal';
-import { EditTagModal } from './components/EditTagModal';
-import { ToastContainer, type ToastMessage } from './components/Toast';
+import { Sidebar } from './components/layout/Sidebar';
+import { Topbar } from './components/layout/Topbar';
+import { Login } from './features/auth/Login';
+import { Signin } from './features/auth/Signin';
+import { Dashboard } from './features/dashboard/Dashboard';
+import { HistoryPage } from './features/logs/HistoryPage';
+import { DevicesPage } from './features/devices/DevicesPage';
+import { DeviceManagerPage } from './features/devices/DeviceManagerPage';
+import { AddDevicePage } from './features/devices/AddDevicePage';
+import { GroupsPage } from './features/groups/GroupsPage';
+import { GroupManagerPage } from './features/groups/GroupManagerPage';
+import { AddGroupPage } from './features/groups/AddGroupPage';
+import { MqttPage } from './features/mqtt/MqttPage';
+import { MqttManagerPage } from './features/mqtt/MqttManagerPage';
+import { AddMqttPage } from './features/mqtt/AddMqttPage';
+import { AccountManagerPage } from './features/accounts/AccountManagerPage';
+import { AddAccountPage } from './features/accounts/AddAccountPage';
+import { TagsPage } from './features/tags/TagsPage';
+import { SystemLogsPage } from './features/logs/SystemLogsPage';
+import { ImageModal } from './components/common/ImageModal';
+import { EditTagModal } from './features/tags/components/EditTagModal';
+import { ToastContainer } from './components/common/Toast';
 
 export function App() {
   const [user, setCurrentUser] = useState<User | null>(getUser());
@@ -25,7 +34,7 @@ export function App() {
   });
   const [currentTab, setCurrentTab] = useState<string>('dashboard');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMessage[]>([]);
+  const { toasts, showToast, dismissToast } = useToast();
 
   // Telemetry Data States
   const [stats, setStats] = useState<DashboardStats | null>(null);
@@ -54,15 +63,6 @@ export function App() {
     timestamp: '',
     location: '',
   });
-
-  const showToast = useCallback((message: string, type: 'success' | 'error' | 'info') => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts((prev) => [...prev, { id, message, type }]);
-  }, []);
-
-  const dismissToast = useCallback((id: string) => {
-    setToasts((prev) => prev.filter((t) => t.id !== id));
-  }, []);
 
   // Fetch Dashboard summary data
   const fetchDashboardData = useCallback(async (isManual = false) => {
@@ -118,16 +118,21 @@ export function App() {
     });
   }, [showToast]);
 
+  const handleAuthSuccess = useCallback(
+    (u: User) => {
+      setCurrentUser(u);
+      setView('dashboard');
+      fetchDashboardData();
+      fetchDevices();
+      fetchTags();
+    },
+    [fetchDashboardData, fetchDevices, fetchTags]
+  );
+
   // Initial persistent token check ("ฝัง Token ไว้ไม่ต้องล็อกอินใหม่")
   useEffect(() => {
     const token = getToken();
     if (token) {
-      api.getMe().then((res) => {
-        if (res.success && res.data) {
-          setCurrentUser(res.data);
-          setUser(res.data);
-        }
-      });
       setView('dashboard');
       fetchDashboardData();
       fetchDevices();
@@ -136,6 +141,25 @@ export function App() {
       setView('login');
     }
   }, [fetchDashboardData, fetchDevices, fetchTags]);
+
+  const sseStatus = useDashboardSse({
+    enabled: view === 'dashboard',
+    onDashboardUpdate: (payload) => {
+      if (payload.stats) setStats(payload.stats);
+      if (Array.isArray(payload.recentScans)) setRecentScans(payload.recentScans);
+      setLastUpdated(new Date().toLocaleTimeString('th-TH'));
+    },
+    onDevicesUpdate: (updates) => {
+      setDevices((prev) => applyDeviceSseUpdates(prev, updates));
+    },
+    onUnauthorized: () => {
+      setToken(null);
+      setUser(null);
+      setCurrentUser(null);
+      setView('login');
+      showToast('เซสชันหมดอายุ กรุณาเข้าสู่ระบบใหม่อีกครั้ง', 'error');
+    },
+  });
 
   const handleLogout = async () => {
     if (!window.confirm('คุณต้องการออกจากระบบหรือไม่?')) return;
@@ -276,6 +300,7 @@ export function App() {
                   stats={stats}
                   latestScan={latestScan}
                   lastUpdated={lastUpdated}
+                  sseStatus={sseStatus}
                   onRefresh={() => fetchDashboardData(true)}
                   isRefreshing={isRefreshing}
                   onViewImage={handleOpenModal}
@@ -341,6 +366,47 @@ export function App() {
                 />
               )}
 
+              {currentTab === 'mqtt' && (
+                <MqttPage
+                  onNavigate={setCurrentTab}
+                  showToast={showToast}
+                />
+              )}
+
+              {currentTab === 'mqtt_manager' && (
+                <MqttManagerPage
+                  devices={devices}
+                  onNavigate={setCurrentTab}
+                  showToast={showToast}
+                />
+              )}
+
+              {currentTab === 'mqtt_add' && (
+                <AddMqttPage
+                  devices={devices}
+                  onCreated={() => setCurrentTab('mqtt_manager')}
+                  onCancel={() => setCurrentTab('mqtt')}
+                  showToast={showToast}
+                />
+              )}
+
+              {currentTab === 'account_manager' && (
+                <AccountManagerPage
+                  currentUser={user}
+                  onNavigate={setCurrentTab}
+                  showToast={showToast}
+                />
+              )}
+
+              {currentTab === 'account_add' && (
+                <AddAccountPage
+                  currentUser={user}
+                  onCreated={() => setCurrentTab('account_manager')}
+                  onCancel={() => setCurrentTab('account_manager')}
+                  showToast={showToast}
+                />
+              )}
+
               {currentTab === 'tags' && (
                 <TagsPage
                   tags={tags}
@@ -349,26 +415,22 @@ export function App() {
                   onDeleteTag={handleDeleteTag}
                 />
               )}
+
+              {currentTab === 'system_logs' && (
+                <SystemLogsPage showToast={showToast} />
+              )}
             </main>
           </div>
         </div>
       ) : view === 'signin' ? (
         <Signin
-          onSuccess={(u) => {
-            setCurrentUser(u);
-            setView('dashboard');
-            fetchDashboardData();
-          }}
+          onSuccess={handleAuthSuccess}
           onNavigateToLogin={() => setView('login')}
           showToast={showToast}
         />
       ) : (
         <Login
-          onSuccess={(u) => {
-            setCurrentUser(u);
-            setView('dashboard');
-            fetchDashboardData();
-          }}
+          onSuccess={handleAuthSuccess}
           onNavigateToSignin={() => setView('signin')}
           showToast={showToast}
         />

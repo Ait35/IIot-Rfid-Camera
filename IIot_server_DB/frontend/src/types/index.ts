@@ -6,6 +6,7 @@ export interface User {
   role: string;
   created_at?: string;
   last_login_at?: string;
+  is_delete?: boolean;
 }
 
 export interface DashboardStats {
@@ -84,6 +85,19 @@ export interface GroupInfo {
   ip_cam_count?: number;
 }
 
+export interface MqttInfo {
+  mqtt_id: number;
+  by_user_id?: number | null;
+  by_user_name?: string | null;
+  group_id: number;
+  group_name?: string | null;
+  topic: string;
+  user_mqtt?: string | null;
+  pass_mqtt?: string | null;
+  created_at?: string;
+  is_delete?: boolean;
+}
+
 export interface DeviceInfo {
   device_id: number;
   device_name: string;
@@ -115,6 +129,29 @@ export interface TagInfo {
   is_delete?: boolean;
 }
 
+export type SystemLogSearchBy = 'all' | 'user' | 'target_id' | 'payload';
+
+export interface SystemLogRecord {
+  activity_id: number;
+  user_id: number | null;
+  action_type: string;
+  target_table: string | null;
+  target_id: number | null;
+  payload: Record<string, unknown> | null;
+  time_action: string;
+  first_name?: string | null;
+  last_name?: string | null;
+  university_id?: string | null;
+  role?: string | null;
+}
+
+export interface SystemLogPageData {
+  items: SystemLogRecord[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
 export interface ApiResponse<T = any> {
   success: boolean;
   status?: number;
@@ -124,3 +161,19 @@ export interface ApiResponse<T = any> {
   error?: string;
   message?: string;
 }
+
+export type SseConnectionStatus = 'connecting' | 'connected' | 'disconnected';
+
+export type SseDeviceUpdateEvent =
+  | {
+      kind: 'device';
+      device_id: number;
+      status: boolean;
+      last_active_at: string;
+    }
+  | {
+      kind: 'ip_camera';
+      ip_cam_id: number;
+      status: boolean;
+      last_active_at: string | null;
+    };

@@ -1,4 +1,4 @@
-import type { ApiResponse, User, DashboardStats, RecentScan, DeviceInfo, JoinedIPCam, GroupInfo, TagInfo, LogRecord } from '../types';
+import type { ApiResponse, User, DashboardStats, RecentScan, DeviceInfo, JoinedIPCam, GroupInfo, MqttInfo, TagInfo, LogRecord, SystemLogPageData, SystemLogSearchBy } from '../types';
 
 const TOKEN_KEY = 'iiot_auth_token';
 const USER_KEY = 'iiot_user_profile';
@@ -79,7 +79,7 @@ export async function request<T = any>(endpoint: string, options: RequestInit = 
 
 export const api = {
   // Auth
-  async login(university_id: string, password: string): Promise<ApiResponse<{ token: string; user?: User }>> {
+  async login(university_id: string, password: string): Promise<ApiResponse<User & { token: string }>> {
     return request('/iiot/login', {
       method: 'POST',
       body: JSON.stringify({ university_id, password }),
@@ -87,7 +87,7 @@ export const api = {
   },
 
   async signin(university_id: string, password: string): Promise<ApiResponse<User & { token: string }>> {
-    return request('/iiot/signin', {
+    return request('/iiot/register-account', {
       method: 'POST',
       body: JSON.stringify({ university_id, password }),
     });
@@ -100,8 +100,56 @@ export const api = {
     return res;
   },
 
-  async getMe(): Promise<ApiResponse<User>> {
-    return request<User>('/iiot/get/me');
+  async getUsers(
+    page = 1,
+    limit = 100,
+    isDelete = false,
+    role?: string,
+    search?: string,
+    startDate?: string,
+    endDate?: string
+  ): Promise<ApiResponse<User[]>> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+      is_delete: String(isDelete),
+    });
+    if (role && role !== 'all') {
+      params.set('role', role);
+    }
+    if (search && search.trim()) {
+      params.set('search', search.trim());
+    }
+    if (startDate) {
+      params.set('start_date', startDate);
+    }
+    if (endDate) {
+      params.set('end_date', endDate);
+    }
+    return request<User[]>(`/iiot/get/users?${params.toString()}`);
+  },
+
+  async createAccount(payload: {
+    university_id: string;
+    password: string;
+    role?: 'admin' | 'dev' | 'teacher';
+  }): Promise<ApiResponse<User & { token: string }>> {
+    return request('/iiot/register-account', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async patchAccount(payload: {
+    traget_id: number;
+    password?: string;
+    role?: 'admin' | 'dev' | 'teacher';
+    is_delete?: boolean;
+  }): Promise<ApiResponse<User>> {
+    return request<User>('/iiot/patch/account', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
   },
 
   // Dashboard & Telemetry
@@ -200,6 +248,61 @@ export const api = {
     });
   },
 
+  async getMqtt(page = 1, limit = 100, isDelete = false): Promise<ApiResponse<MqttInfo[]>> {
+    return request(`/iiot/get/mqtt?page=${page}&limit=${limit}&is_delete=${isDelete}`);
+  },
+
+  async getSystemLogs(
+    page = 1,
+    limit = 20,
+    filters?: {
+      action_type?: string;
+      target_table?: string;
+      search?: string;
+      search_by?: SystemLogSearchBy;
+      start_date?: string;
+      end_date?: string;
+    }
+  ): Promise<ApiResponse<SystemLogPageData>> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (filters?.action_type) params.set('action_type', filters.action_type);
+    if (filters?.target_table) params.set('target_table', filters.target_table);
+    if (filters?.search) params.set('search', filters.search);
+    if (filters?.search_by && filters.search_by !== 'all') params.set('search_by', filters.search_by);
+    if (filters?.start_date) params.set('start_date', filters.start_date);
+    if (filters?.end_date) params.set('end_date', filters.end_date);
+    return request(`/iiot/get/system-log?${params.toString()}`);
+  },
+
+  async createMqtt(payload: {
+    topic: string;
+    group_id: number;
+    user_mqtt?: string;
+    pass_mqtt?: string;
+  }): Promise<ApiResponse<MqttInfo>> {
+    return request('/iiot/post/mqtt', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+  },
+
+  async patchMqtt(payload: {
+    mqtt_id: number;
+    topic?: string;
+    group_id?: number;
+    user_mqtt?: string;
+    pass_mqtt?: string;
+    is_delete?: boolean;
+  }): Promise<ApiResponse<MqttInfo>> {
+    return request('/iiot/patch/mqtt', {
+      method: 'PATCH',
+      body: JSON.stringify(payload),
+    });
+  },
+
   async getTags(
     page = 1,
     limit = 50,
@@ -227,7 +330,24 @@ export const api = {
   },
 
   // Scan History Logs (Dedicated log endpoint)
-  async getLogs(page = 1, limit = 50): Promise<ApiResponse<LogRecord[]>> {
-    return request<LogRecord[]>(`/iiot/get/log?page=${page}&limit=${limit}`);
+  async getLogs(
+    page = 1,
+    limit = 50,
+    filters?: {
+      device_id?: number;
+      search?: string;
+      start_date?: string;
+      end_date?: string;
+    }
+  ): Promise<ApiResponse<LogRecord[]>> {
+    const params = new URLSearchParams({
+      page: String(page),
+      limit: String(limit),
+    });
+    if (filters?.device_id) params.set('device_id', String(filters.device_id));
+    if (filters?.search?.trim()) params.set('search', filters.search.trim());
+    if (filters?.start_date) params.set('start_date', filters.start_date);
+    if (filters?.end_date) params.set('end_date', filters.end_date);
+    return request<LogRecord[]>(`/iiot/get/log?${params.toString()}`);
   },
 };
