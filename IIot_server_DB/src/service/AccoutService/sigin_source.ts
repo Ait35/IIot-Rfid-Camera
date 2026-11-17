@@ -16,7 +16,13 @@ interface user_req {
 }
 
 export const SigninService = {
-    async signin(inputData: SigninInput, ip: string, userAgent: string) {
+    async signin(
+        inputData: SigninInput,
+        ip: string,
+        userAgent: string,
+        assignedRole: 'admin' | 'dev' | 'teacher' = 'admin',
+        byUserId?: number
+    ) {
         console.log('----- API action: signin service -----');
         if (!db) throw new Error('ไม่มีการเชื่อมต่อกับ DB ได้');
 
@@ -43,10 +49,11 @@ export const SigninService = {
             console.log('You are not student of university :', university_id);
             return { success: false, status: 400, error: `You are not student of university : ${university_id}` };
         }
+        const hashedPassword = await HelperService.createHash(password);
         const req: user_req = {
             university_id,
-            password,
-            role: profile.role,
+            password: hashedPassword,
+            role: assignedRole, //admin < teacher == dev
             first_name: profile.first_name,
             last_name: profile.last_name,
         };
@@ -63,8 +70,9 @@ export const SigninService = {
             
             console.log(`--- status : ${result.status} ---`);
 
-            await ActivityLogService.Insert_logAction(result.data.user_id, action, 'User', result.data.user_id, {
+            await ActivityLogService.Insert_logAction(byUserId ?? result.data.user_id, action, 'User', result.data.user_id, {
                 university_id: university_id,
+                role_assigned: assignedRole,
                 role_at_login: profile.role,
                 ip_address: ip,
                 user_agent: userAgent
