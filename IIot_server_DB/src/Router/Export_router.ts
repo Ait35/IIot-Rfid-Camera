@@ -8,6 +8,7 @@ import path_dashboard from './path/path.dashboard.js';
 import path_upload_img from './path/path_upload.img.js';
 import path_Log from './path/path.Log.js';
 import path_IP_cam from './path/path.IP_cam.js';
+import path_events from './path/path.events.js';
 
 const router = Router();
 router.use(path_login_sigin);
@@ -19,5 +20,6 @@ router.use(path_dashboard);
 router.use(path_upload_img);
 router.use(path_Log);
 router.use(path_IP_cam);
+router.use(path_events);
 
 export default router;

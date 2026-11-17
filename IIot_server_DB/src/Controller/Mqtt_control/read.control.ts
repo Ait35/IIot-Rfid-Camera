@@ -8,12 +8,13 @@ export const MGet_control = async (req: Request, res: Response) => {
     const limit = parseInt(req.query.limit as string) || 10;
     const group_id = req.query.group_id ? parseInt(req.query.group_id as string) : undefined;
     const search = (req.query.search as string)?.trim() || undefined;
+    const is_delete = req.query.is_delete === 'true';
 
     if (!userId) {
         return res.status(400).json({ error: 'Missing user id' });
     }
     try {
-        const mqtt_res = await MqttRead.get_mqtt(page, limit, group_id, search);
+        const mqtt_res = await MqttRead.get_mqtt(page, limit, group_id, search, is_delete);
         if (!mqtt_res.success) {
             return res.status(mqtt_res.status).json(mqtt_res);
         }

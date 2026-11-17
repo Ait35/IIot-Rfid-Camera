@@ -103,19 +103,17 @@ const uploadDir = path.join(__dirname, '../public/uploadsImg');
 if (!fs.existsSync(uploadDir)) {
     fs.mkdirSync(uploadDir, { recursive: true });
 }
-await updataTatalGroup()
-//console.log(listGroup)
-setInterval(async () =>{
-  if(totalGroup <= 0){
-    return;
-  }
-  if(indexGroup >= totalGroup){
-    indexGroup = 0 ;
-  }
-  const start = Date.now();
-  const res = await MainProcess.checkCameraAlive(listGroup[indexGroup] as number)
-  indexGroup++;
- // console.log("==============================================");
-  // console.log(`⏱️ [KeepAlive] - ${Date.now() - start}ms (Status: ${(res as any)?.status})`)
+const KEEP_ALIVE_INTERVAL_MS = 60_000; // เช็คสถานะกล้องทุก 1 นาที
+const CAMERA_CHUNK_SIZE = 30;          // เช็คพร้อมกันชุดละ 30 ตัว
 
-} , 30000)
+async function runKeepAliveLoop() {
+  try {
+    await MainProcess.checkAllCamAlive(CAMERA_CHUNK_SIZE);
+  } catch (error) {
+    console.error('❌ [KeepAlive] loop error:', error);
+  } finally {
+    setTimeout(runKeepAliveLoop, KEEP_ALIVE_INTERVAL_MS);
+  }
+}
+
+runKeepAliveLoop();

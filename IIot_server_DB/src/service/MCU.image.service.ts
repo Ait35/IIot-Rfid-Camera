@@ -2,6 +2,7 @@ import Service from './helper_func.js';
 import { InsertData } from '../Repository/insertQuery/helper.insert.Query.js';
 import { PoolClient } from 'pg';
 import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
+import { pushDashboardUpdate } from '../Infra/SSE.js';
 
 interface Log_img {
     [key: string]: any; 
@@ -15,7 +16,7 @@ export const ImageService = {
         console.log('----- API action: Mcu UploadedImage service -----');
         try{
             //ส่ง ecp / log id มา เอามาเช็ค cache ถ้าไม่เจอก็เข้าไปหาใน log rfid 
-            const result = await Service.ChackCacheAndSave('log_id', log_id, 'log_rfid', 'log_id' , false);
+            const result = await Service.ChackCacheAndSave('log_rfid', log_id, 'log_rfid', 'log_id' , false);
             //return ค่าของ log_rfid ออกมาหมดเลย
             if(!result.success){
                 console.log(result);
@@ -42,17 +43,26 @@ export const ImageService = {
                 mcu_cam_id :device_id,
                 image_path : imagePath
             }
-            
-            return await Service.executeWithLog('MCU UploadedImage service', 'log_images', 'INSERT', null ,
-                async (transaction: PoolClient)=>{
+            const uploadResult = await Service.executeWithLog(
+                'MCU UploadedImage service',
+                'log_images',
+                'INSERT',
+                null,
+                async (transaction: PoolClient) => {
                     const result = await InsertData('log_images', log_img, transaction);
 
                     return {
                         result,
                         recordId: result.data.image_id,
-                        logPayload: log_img
-                    }
-                });
+                        logPayload: log_img,
+                    };
+                }
+            );
+
+            if (uploadResult?.success) {
+                await pushDashboardUpdate(); //หลัง COMMIT เสร็จแล้ว
+            }
+            return uploadResult;
         }catch(error){
             console.error('Error occurred while checking cache or fetching data from database:', error);
             throw error;

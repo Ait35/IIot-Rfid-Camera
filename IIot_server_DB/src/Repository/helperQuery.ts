@@ -1,7 +1,57 @@
 import { db } from '../Infra/connect_db.js';
 import { PoolClient } from 'pg';
 
+const DATE_ONLY_RE = /^\d{4}-\d{2}-\d{2}$/;
+const DATETIME_MIN_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}$/;
+const DATETIME_SEC_RE = /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}:\d{2}$/;
+
 export const Query = {
+    /** ตรวจรูปแบบวันเวลา ('YYYY-MM-DD' หรือ 'YYYY-MM-DD HH:mm(:ss)') แล้วแปลง 'T' เป็นช่องว่างสำหรับ Postgres */
+    parseDateTime(raw: unknown): string | undefined {
+        if (typeof raw !== 'string') return undefined;
+        const trimmed = raw.trim();
+        if (!trimmed) return undefined;
+
+        if (
+            DATE_ONLY_RE.test(trimmed) ||
+            DATETIME_MIN_RE.test(trimmed) ||
+            DATETIME_SEC_RE.test(trimmed)
+        ) {
+            return trimmed.replace('T', ' ');
+        }
+        return undefined;
+    },
+
+    /** เติมเงื่อนไข WHERE กรองช่วงวัน-เวลา (ตั้งแต่ startDate ถึง endDate) และคืนค่า $idx ถัดไป */
+    addDateRangeFilter(
+        column: string,
+        startDate: string | undefined,
+        endDate: string | undefined,
+        conditions: string[],
+        values: any[],
+        idx: number
+    ): number {
+        if (startDate) {
+            conditions.push(`${column} >= $${idx}::timestamp`);
+            values.push(startDate);
+            idx++;
+        }
+
+        if (endDate) {
+            if (DATE_ONLY_RE.test(endDate)) {
+                conditions.push(`${column} < ($${idx}::date + INTERVAL '1 day')`);
+            } else if (DATETIME_MIN_RE.test(endDate)) {
+                // datetime-local ส่งมาถึงแค่ระดับนาที จึงบวก 1 นาทีเพื่อรวมวินาที :00..:59 ทั้งหมดของนาทีนั้น
+                conditions.push(`${column} < ($${idx}::timestamp + INTERVAL '1 minute')`);
+            } else {
+                conditions.push(`${column} <= $${idx}::timestamp`);
+            }
+            values.push(endDate);
+            idx++;
+        }
+
+        return idx;
+    },
     async updateToken (user_id:string, accessToken:string){
         console.log('----- API action: updateToken  -----');
         if(!user_id || !accessToken){

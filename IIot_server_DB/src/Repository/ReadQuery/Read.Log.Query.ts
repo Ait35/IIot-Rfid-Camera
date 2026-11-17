@@ -1,10 +1,13 @@
 import { db } from '../../Infra/connect_db.js';
+import { Query } from '../helperQuery.js';
 
 export const getLogFilteredPage = async (
     page: number,
     limit: number,
     device_id?: number,
-    search?: string
+    search?: string,
+    start_date?: string,
+    end_date?: string
 ) => {
     if (!db) return { success: false, status: 500, error: 'Database not connected' };
 
@@ -28,6 +31,8 @@ export const getLogFilteredPage = async (
         values.push(`%${search}%`);
         idx++;
     }
+
+    idx = Query.addDateRangeFilter('T1.time_stamp', start_date, end_date, conditions, values, idx);
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
     const limitIdx = idx++;

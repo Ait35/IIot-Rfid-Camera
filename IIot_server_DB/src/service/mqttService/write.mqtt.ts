@@ -40,9 +40,16 @@ export const MqttWrite = {
 
             console.log('----- Add System Log Successful! -----');
             return res_query;
-        } catch (error) {
+        } catch (error: any) {
             await transaction.query('ROLLBACK');
             console.error('❌ Database ROLLBACK :', error);
+            if (error?.code === '23505') {
+                const detail = String(error?.constraint || '');
+                const msg = detail.includes('user_mqtt')
+                    ? 'Username MQTT นี้ถูกใช้งานแล้ว'
+                    : 'กลุ่มอุปกรณ์นี้มีการตั้งค่า MQTT อยู่แล้ว';
+                return { success: false, status: 409, error: msg };
+            }
             return { success: false, status: 500, error: 'Failed to insert table Mqtt' };
         } finally {
             transaction.release();
@@ -95,7 +102,14 @@ export const MqttWrite = {
         } catch (error: any) {
             await transaction.query('ROLLBACK');
             console.error('❌ Database ROLLBACK :', error);
-            throw error;
+            if (error?.code === '23505') {
+                const detail = String(error?.constraint || '');
+                const msg = detail.includes('user_mqtt')
+                    ? 'Username MQTT นี้ถูกใช้งานแล้ว'
+                    : 'กลุ่มอุปกรณ์นี้มีการตั้งค่า MQTT อยู่แล้ว';
+                return { success: false, status: 409, error: msg };
+            }
+            return { success: false, status: 500, error: 'Failed to update table Mqtt' };
         } finally {
             transaction.release();
         }

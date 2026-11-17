@@ -60,6 +60,8 @@ export const MultiInsert = async (
                 type = "boolean";
             } else if (typeof data === "string") {
                 type = "varchar";
+            } else if (typeof data === "object" && data !== null) {
+                type = "jsonb";
             }
 
             return `$${index+1}::${type}[]`;

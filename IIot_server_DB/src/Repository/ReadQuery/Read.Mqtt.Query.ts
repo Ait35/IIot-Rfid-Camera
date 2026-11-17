@@ -4,16 +4,17 @@ export const getMqttFilteredPage = async (
     page: number,
     limit: number,
     group_id?: number,
-    search?: string
+    search?: string,
+    is_delete: boolean = false
 ) => {
     if (!db) return { success: false, status: 500, error: 'Database not connected' };
 
-    const conditions: string[] = ['T1.is_delete = FALSE'];
-    const values: any[] = [];
-    let idx = 1;
+    const conditions: string[] = ['T1.is_delete = $1'];
+    const values: any[] = [is_delete];
+    let idx = 2;
 
     if (group_id && !Number.isNaN(group_id)) {
-        conditions.push(`T1.group_id = $${idx}`);
+        conditions.push(`T1.group_i d = $${idx}`);
         values.push(group_id);
         idx++;
     }

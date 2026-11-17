@@ -22,6 +22,7 @@ services:
       - .env
     environment:
       # override ค่าใน .env ให้ชี้ไปที่ชื่อ service ภายใน Docker network
+      TZ: Asia/Bangkok
       DB_HOST: postgres-db
       REDIS_URL: redis://redis-cache:6379
       #1883 เพื่อเข้า mqtt แบบไม่ต้องใส่หรัส

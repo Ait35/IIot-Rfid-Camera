@@ -14,7 +14,7 @@ CREATE TABLE Users (
     password      VARCHAR(255) NOT NULL,
     first_name    VARCHAR(255) NOT NULL,
     last_name     VARCHAR(255) NOT NULL,
-    role          VARCHAR(20) DEFAULT 'student',
+    role          VARCHAR(20) DEFAULT 'admin',
     created_at    TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0), 
     last_login_at TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
     is_delete     BOOLEAN DEFAULT FALSE,       
@@ -100,7 +100,7 @@ CREATE TABLE MQTT (
     By_user_id   INT NOT NULL ,
     Group_id     INT NOT NULL UNIQUE,      
     Topic        VARCHAR(255),               -- เช่น 'mqtt/DOOR_1'
-    User_Mqtt    VARCHAR(255),
+    User_Mqtt    VARCHAR(255) UNIQUE,
     Pass_Mqtt    VARCHAR(255),
     created_at   TIMESTAMP(0) DEFAULT CURRENT_TIMESTAMP(0),
     is_delete    BOOLEAN DEFAULT FALSE,       
