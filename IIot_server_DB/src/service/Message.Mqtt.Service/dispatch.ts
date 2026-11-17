@@ -2,6 +2,7 @@ import { insertEcpAndEcpLog } from './EPC.Service.js';
 import { updateStatusService } from './status.Service.js';
 import { publishMessage } from '../../Infra/Mqtt.infra.js';
 import { MainProcess } from '../IP_CamService/processIP_Cam.js';
+import { pushDashboardUpdate } from '../../Infra/SSE.js';
 
 interface C_Log {
     device_id: number;
@@ -61,6 +62,10 @@ export const dispatch_message = async (topic : string, message : string) => {
 
         switch(topicParts[1]){
             case 'rfid':
+                // ดึง mac จากท้าย Topic กรณีที่ Payload ไม่ได้แนบ mac มาด้วย
+                if (!payload.mac && topicParts.length > 3) {
+                    payload.mac = topicParts[topicParts.length - 1];
+                }
                 // ตัด [0]=SPU, [1]=rfid, [2]=group และตัดตัวสุดท้าย (-1) คือ mac ทิ้งไป
                 const roomTopic = topicParts.slice(3, -1).join('/');
                 // ประกอบเป็น Topic สั่งกล้องถ่ายรูป
@@ -82,17 +87,18 @@ export const dispatch_message = async (topic : string, message : string) => {
                 const res = await MainProcess.Prosecc_snapshot(result.data.log_id ,payload.group_id)
                 if(!res || res.error){
                     console.log(res);
-                    return res
                 }
                 break; 
             case 'status':
                 await updateStatusService(payload);
-                return 
+                return;
 
             default:
                 console.log('Invalid topic format');
                 return;
         };
+
+        await pushDashboardUpdate();
         console.log('=========================');
     }catch(error){
         console.error('❌ Error in dispatch_message', error);

@@ -1,11 +1,12 @@
 import { Request, Response } from 'express';
 import Service from '../service/helper_func.js';
 import { getData } from '../Repository/ReadQuery/helper.Read.Query.js';
+import { updateData } from '../Repository/updataQuery.js';
 
 export const Auth_reqConnect = async (req: Request, res: Response) => {
     console.log('----- API action: authMiddleware -----');
     let api_key  = req.headers.authorization;
-    let { mac } = req.body;
+    const { mac, ip, subnet, gate_way } = req.body;
 
     console.log('mac :', mac);
     if (!mac) {
@@ -48,6 +49,19 @@ export const Auth_reqConnect = async (req: Request, res: Response) => {
             console.log('Key Api not match to device mac');
             return res.status(401).json({ message: 'Unauthorized: Key Api not match to device' });
         }
+
+        // อัปเดตข้อมูล Network (ip, subnet, gate_way) ของบอร์ดลงตาราง device_info เมื่อเชื่อมต่อสำเร็จ
+        const networkUpdate: Record<string, any> = {
+            ...(ip && { ip }),
+            ...(subnet && { subnet }),
+            ...(gate_way && { gate_way }),
+            last_active_at: 'now()'
+        };
+        if (Object.keys(networkUpdate).length > 1) {
+            await updateData('device_info', 'device_id', Number((result as any).data.device_id), true, networkUpdate);
+            console.log(`✅ Updated network info for device_id ${(result as any).data.device_id}:`, { ip, subnet, gate_way });
+        }
+
         console.log("device id :" + (result as any).data.device_id + " mac :" + (result as any).data.mac);
         console.log("topic :" + (result as any).data.topic);
         console.log("✅ connect success");

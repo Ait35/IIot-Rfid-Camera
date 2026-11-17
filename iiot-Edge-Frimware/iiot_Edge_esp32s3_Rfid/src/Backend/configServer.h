@@ -12,15 +12,22 @@ namespace Backend {
         }
         HTTPClient http;
 
-        String serverPath = Secret::API_URL; 
-        http.begin(serverPath);
+        //String serverPath = Secret::API_URL; 
+        http.begin(API_URL);
         Serial.println("Connecting to server...");
         Serial.println("----------------------------------------");
 
         http.addHeader("Content-Type", "application/json"); 
         http.addHeader("authorization", Secret::key_api);
         
-        String body = "{\"mac\" : \"" + device_info.mac + "\"}";
+        device_info.IP = WiFi.localIP().toString();
+        device_info.subnet = WiFi.subnetMask().toString();
+        device_info.gateway = WiFi.gatewayIP().toString();
+
+        String body = "{\"mac\" : \"" + device_info.mac + "\"" +
+                      ", \"ip\" : \"" + device_info.IP + "\"" +
+                      ", \"subnet\" : \"" + device_info.subnet + "\"" +
+                      ", \"gate_way\" : \"" + device_info.gateway + "\"}";
         Serial.println(body);
         int httpResponseCode = http.POST(body);
 
@@ -51,7 +58,11 @@ namespace Backend {
         }
 
         mqtt_info.userMqtt = doc["data"]["user_mqtt"].as<String>();
-        mqtt_info.passMqtt = doc["data"]["pass_mqtt"].as<String>();
+
+        preferences.begin("mqtt-creds", false); // โหมดเขียน
+        preferences.putString("mqtt_user", mqtt_info.userMqtt);
+        preferences.end();
+        
         device_info.device_id = doc["data"]["device_id"];
         device_info.group_id = doc["data"]["group_id"];
 

@@ -251,7 +251,12 @@ void loop() {
         Rfid::parsedFrame();
         Serial.println("-------------------------------------------------");
         mqtt.publishEPC(
-            "{\"device_id\" : " +  String(device_info.device_id) + ", \"group_id\" : " + String(device_info.group_id) + ", \"epc\" : \"" + rfid_data.tag + "\", \"distance\" : " + String(rfid_data.distance) +"}"
+            "{\"device_id\" : " + String(device_info.device_id) +
+            ", \"group_id\" : " + String(device_info.group_id) +
+            ", \"mac\" : \"" + device_info.mac + "\"" +
+            ", \"ip\" : \"" + device_info.IP + "\"" +
+            ", \"epc\" : \"" + rfid_data.tag + "\"" +
+            ", \"distance\" : " + String(rfid_data.distance, 2) + "}"
         );
 
         frameBuffer.clear();

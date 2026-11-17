@@ -104,7 +104,7 @@ void setup() {
     device_info.deviceName = setDeviceId();
     setAP(&device_info.deviceName);
     server.begin();
-    setupWebServer();
+    WebService::setupWebServer();
 
     Serial.print("connect internet...");
     //เช็ค SSID / password in EEprom
@@ -119,7 +119,7 @@ void setup() {
     }
 
     while (!IsWedGetIP || WiFi.status() != WL_CONNECTED) {
-        loopWebServer();
+        WebService::loopWebServer();
         oled.Ap_status();
         delay(10);
     }       
@@ -139,7 +139,7 @@ void setup() {
     ServerConnectTime = millis();
     bool connect = Backend::connectToServer();
     while (!connect) {
-        loopWebServer();   
+        WebService::loopWebServer();   
         if (WiFi.status() != WL_CONNECTED) ESP.restart();
 
         // อัปเดตจุดกำลังโหลด Server ให้ขยับลื่นไหลทุก 300ms
@@ -166,6 +166,18 @@ void setup() {
     configTime(7*3600, 0, "pool.ntp.org");
     device_info.StartTime = gettime();
     device_info.HardWareUpTime = getUpTime(millis());
+
+    Serial.println("wait for MQTT user and pass...");
+    preferences.begin("mqtt-creds", true);
+    mqtt_info.userMqtt = preferences.getString("mqtt_user", "");
+    mqtt_info.passMqtt = preferences.getString("mqtt_pass", "");
+    preferences.end();
+    while(mqtt_info.userMqtt.isEmpty() || (mqtt_info.userMqtt.isEmpty() && mqtt_info.passMqtt.isEmpty())){
+        WebService::loopWebServer();
+        Serial.print('.');
+        delay(5);
+    }
+    Serial.println();
         
     mqtt.setupMqtt(
         mqtt_info.userMqtt, 
@@ -186,7 +198,7 @@ void setup() {
 }
 
 void loop() {
-    loopWebServer();
+    WebService::loopWebServer();
     mqtt.client.loop();
     ArduinoOTA.handle();
 
@@ -228,7 +240,12 @@ void loop() {
 
         if(rfid_data.tag != prevRfid){
             mqtt.publishEPC(
-                "{\"device_id\" : " +  String(device_info.device_id) + ", \"group_id\" : " + String(device_info.group_id) + ", \"epc\" : \"" + rfid_data.tag + "\", \"distance\" : " + String(rfid_data.distance) +"}"
+                "{\"device_id\" : " + String(device_info.device_id) +
+                ", \"group_id\" : " + String(device_info.group_id) +
+                ", \"mac\" : \"" + device_info.mac + "\"" +
+                ", \"ip\" : \"" + device_info.IP + "\"" +
+                ", \"epc\" : \"" + rfid_data.tag + "\"" +
+                ", \"distance\" : " + String(rfid_data.distance, 2) + "}"
             );
             prevRfid = rfid_data.tag;
         }else{

@@ -24,7 +24,14 @@ namespace Backend {
         http.addHeader("Content-Type", "application/json"); 
         http.addHeader("authorization", Secret::key_api);
         
-        String body = "{\"mac\" : \"" + device_info.mac + "\"}";
+        device_info.IP = WiFi.localIP().toString();
+        device_info.subnet = WiFi.subnetMask().toString();
+        device_info.gateway = WiFi.gatewayIP().toString();
+
+        String body = "{\"mac\" : \"" + device_info.mac + "\"" +
+                      ", \"ip\" : \"" + device_info.IP + "\"" +
+                      ", \"subnet\" : \"" + device_info.subnet + "\"" +
+                      ", \"gate_way\" : \"" + device_info.gateway + "\"}";
         Serial.println(body);
         int httpResponseCode = http.POST(body);
 
