@@ -22,33 +22,38 @@
 
 | Endpoint | หน้าที่ | รูปแบบ Auth | Content-Type | Rate Limit |
 |---|---|---|---|---|
-| `POST /iiot/signin` | สมัคร/ลงทะเบียนผู้ใช้ใหม่ผ่าน API มหาวิทยาลัย | ไม่ต้องมี | `application/json` | 10 req / 5 min |
-| `POST /iiot/login` | เข้าสู่ระบบ และรับ Token | ไม่ต้องมี | `application/json` | 10 req / 5 min |
+| `POST /iiot/register-account` | สร้างบัญชีผู้ใช้ใหม่ (ต้องเป็น `dev`/`teacher` หรือบัญชี `dev` แรกหลัง Reset DB) | Conditional JWT | `application/json` | 10 req / 5 min |
+| `POST /iiot/login` | เข้าสู่ระบบ และรับ Token + ข้อมูลโปรไฟล์ | ไม่ต้องมี | `application/json` | 10 req / 5 min |
 | `POST /iiot/logout` | ออกจากระบบ และทำลาย Session ใน Redis | JWT Token | ไม่มี Body | ค่าเริ่มต้น |
 | `POST /iiot/post/group` | สร้างกลุ่มอุปกรณ์ (Device Group) | JWT Token | `application/json` | Global Limit |
 | `POST /iiot/post/device` | ลงทะเบียนอุปกรณ์ใหม่ (RFID / CAM) | JWT Token | `application/json` | Global Limit |
-| `POST /iiot/post/req_connect` | อุปกรณ์ร้องขอเชื่อมต่อระบบ (Handshake รับ config MQTT) | Device Key | `application/json` | 30 req / 1 min |
+| `POST /iiot/post/req_connect` | อุปกรณ์ร้องขอเชื่อมต่อระบบ (Handshake รับ config MQTT + อัปเดต IP) | Device Key | `application/json` | 30 req / 1 min |
 | `POST /iiot/post/mqtt` | เพิ่มการตั้งค่า MQTT Broker/Topic สำหรับกลุ่ม | JWT Token | `application/json` | Global Limit |
 | `POST /iiot/post/upload_img` | อัปโหลดภาพหลักฐานจากกล้อง ESP32-S3 | Device Key | `multipart/form-data` | 20 req / 1 min |
 
 ---
 
-## 1. User Sign In (ลงทะเบียนผู้ใช้งาน)
-ดึงข้อมูลยืนยันจากระบบมหาวิทยาลัยเพื่อสร้างบัญชีผู้ใช้งานใหม่ลง Database
+## 1. Register Account (สร้างบัญชีผู้ใช้งาน)
+ดึงข้อมูลยืนยันจากระบบมหาวิทยาลัยเพื่อสร้างบัญชีผู้ใช้งานใหม่ลง Database พร้อม **Hash รหัสผ่านด้วย Bcrypt** อัตโนมัติ
 
-- **Endpoint**: `POST /iiot/signin`
-- **Authentication**: ไม่มี (Public)
+- **Endpoint**: `POST /iiot/register-account`
+- **Authentication & เงื่อนไขสิทธิ์ (`firstDevOrAuthMiddleware`)**:
+  - **กรณียังไม่มีบัญชี `dev` หรือ `teacher` ในระบบเลย (เช่น เพิ่ง Reset DB):** ยิงได้โดยไม่ต้องแนบ Token และระบบจะตั้ง Role เป็น **`dev`** ให้อัตโนมัติ
+  - **กรณีมี `dev` หรือ `teacher` ในระบบแล้ว:** ต้องแนบ `Authorization: Bearer <JWT_TOKEN>` ของผู้ที่มีสิทธิ์ **`dev` หรือ `teacher`** เท่านั้น (สิทธิ์ `admin` จะถูกปฏิเสธด้วย `403 Forbidden`)
 - **Headers**:
   ```http
   Content-Type: application/json
+  Authorization: Bearer <JWT_TOKEN>   # บังคับเมื่อมี dev/teacher ในระบบแล้ว
   ```
 - **Request Body**:
   ```json
   {
     "university_id": "67199999",
-    "password": "password123"
+    "password": "password123",
+    "role": "admin"
   }
   ```
+  *(ฟิลด์ `role` เป็น Optional: `'admin' | 'teacher' | 'dev'` ค่าเริ่มต้นคือ `'admin'` ยกเว้นบัญชีแรกจะเป็น `'dev'` เสมอ)*
 - **Response**:
   - **`200 OK` (สำเร็จ)**:
     ```json
@@ -60,7 +65,7 @@
         "university_id": "67199999",
         "first_name": "Gemini",
         "last_name": "Flash3.8",
-        "role": "teacher",
+        "role": "admin",
         "created_at": "2026-10-18T19:05:34.000Z",
         "last_login_at": "2026-10-18T19:05:34.000Z",
         "is_delete": false,
@@ -68,19 +73,19 @@
       }
     }
     ```
-  - **`400 Bad Request` (ข้อมูลไม่ครบถ้วน หรือไม่พบรหัสในระบบส่วนกลาง ม.)**:
+  - **`401 Unauthorized` (ไม่ได้แนบ Token เมื่อระบบมีผู้ใช้แล้ว)**:
     ```json
-    { "error": "Missing university id or password" }
+    { "message": "Unauthorized: ไม่พบ Token" }
     ```
-    หรือ
+  - **`403 Forbidden` (สิทธิ์ไม่ใช่ `dev` หรือ `teacher`)**:
     ```json
-    { "success": false, "status": 400, "error": "Invalid university id: 67199999" }
+    { "success": false, "status": 403, "error": "เฉพาะ dev หรือ teacher เท่านั้นที่สามารถสร้างบัญชีใหม่ได้" }
     ```
 
 ---
 
 ## 2. User Login (เข้าสู่ระบบ)
-ตรวจสอบข้อมูลบัญชี และสร้าง/รีเฟรช Token สำหรับนำไปใช้งานต่อ
+ตรวจสอบข้อมูลบัญชี สร้าง Token ใหม่ลง Redis Session และส่งข้อมูลโปรไฟล์ผู้ใช้กลับทันที
 
 - **Endpoint**: `POST /iiot/login`
 - **Authentication**: ไม่มี (Public)
@@ -91,8 +96,8 @@
 - **Request Body**:
   ```json
   {
-    "university_id": "67199999",
-    "password": "password123"
+    "university_id": "67159200",
+    "password": "admin"
   }
   ```
 - **Response**:
@@ -101,7 +106,17 @@
     {
       "success": true,
       "status": 200,
-      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      "data": {
+        "user_id": 1,
+        "university_id": "67159200",
+        "first_name": "อธิป",
+        "last_name": "ปทุมสูติ",
+        "role": "dev",
+        "created_at": "2026-10-18T19:05:34.000Z",
+        "last_login_at": "2026-11-17T13:12:55.000Z",
+        "is_delete": false,
+        "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+      }
     }
     ```
   - **`400 Bad Request` (รหัสผ่านไม่ถูกต้อง หรือส่งข้อมูลไม่ครบ)**:
@@ -260,9 +275,13 @@
 - **Request Body**:
   ```json
   {
-    "mac": "246F28ABCDEF"
+    "mac": "246F28ABCDEF",
+    "ip": "192.168.1.50",
+    "subnet": "255.255.255.0",
+    "gate_way": "192.168.1.1"
   }
   ```
+  *(หากบอร์ดส่ง `ip`, `subnet`, `gate_way` มาด้วย ระบบจะอัปเดตลงตาราง `device_info` พร้อม `last_active_at` ให้อัตโนมัติ)*
 - **Response**:
   - **`200 OK` (สำเร็จ)**:
     ```json

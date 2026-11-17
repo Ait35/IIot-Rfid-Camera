@@ -22,17 +22,21 @@
 
 | Endpoint | หน้าที่ | รูปแบบ Auth | Query Parameters | อัตราจำกัด (Rate Limit) |
 |---|---|---|---|---|
-| `GET /iiot/get/me` | ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบันจาก Token | Bearer JWT | *ไม่มี* | ตามสิทธิ์ Token |
+| `GET /iiot/get/users` | ดึงรายชื่อบัญชีผู้ใช้ทั้งหมด (ไม่ส่ง `password` และ `token`) | Bearer JWT | `page`, `limit`, `role`, `search`, `is_delete` | 100 req / 15 min |
 | `GET /iiot/get/group` | ดึงรายชื่อกลุ่มอุปกรณ์ (พร้อมจำนวนอุปกรณ์ในกลุ่ม) | Bearer JWT | `page`, `limit`, `search`, `is_delete` | 100 req / 15 min |
 | `GET /iiot/get/device` | ดึงรายการอุปกรณ์ (RFID / CAM) พร้อมกล้องในกลุ่ม | Bearer JWT | `page`, `limit`, `device_type`, `status`, `group_id`, `search`, `is_delete` | 100 req / 15 min |
 | `GET /iiot/get/ip_cam` | ดึงรายการกล้อง IP Camera ประจำกลุ่ม | Bearer JWT | `page`, `limit`, `status`, `group_id`, `search`, `is_delete` | 100 req / 15 min |
 | `GET /iiot/get/mqtt` | ดึงรายการการตั้งค่า MQTT ประจำกลุ่ม | Bearer JWT | `page`, `limit`, `group_id`, `search` | 100 req / 15 min |
 | `GET /iiot/get/tag` | ดึงรายการแท็ก RFID ที่ลงทะเบียนในระบบ | Bearer JWT | `page`, `limit`, `status`, `search` | 100 req / 15 min |
 | `GET /iiot/get/log` | ดึงประวัติการสแกนบัตร RFID พร้อมข้อมูลแท็กและอุปกรณ์ | Bearer JWT | `page`, `limit`, `device_id`, `search` | 100 req / 15 min |
+| `GET /iiot/get/system-log` | ดึงประวัติการทำงานของระบบ (System / Activity Logs) | Bearer JWT | `page`, `limit`, `action_type`, `target_table`, `search`, `search_by`, `start_date`, `end_date` | 100 req / 15 min |
 | `GET /iiot/get/dashboard` | ดึงข้อมูลสรุปสถิติและ 10 การสแกนล่าสุด | Bearer JWT | *ไม่มี* | 100 req / 15 min |
+| `GET /iiot/events/stream` | เชื่อมต่อ Real-time Stream (SSE) สำหรับ Dashboard & Devices | Bearer JWT | *ไม่มี* | Rate Limit SSE |
 | `GET /uploads/:filename` | ดึงไฟล์รูปภาพหลักฐานที่บันทึกจากกล้อง | Public | *ไม่มี* | ตามขีดจำกัด Express |
 
-> 💡 **หมายเหตุ Activity Log:** เมธอด `GET` ทั้งหมดไม่บันทึกลงตาราง `activity_log` เพื่อลดขนาดฐานข้อมูล (บันทึกเฉพาะฝั่ง POST / PATCH / Auth)
+> 💡 **หมายเหตุ:**
+> - `GET /iiot/get/me` ถูกปิดใช้งานชั่วคราว เนื่องจาก `POST /iiot/login` ส่งข้อมูลโปรไฟล์ผู้ใช้กลับมาให้พร้อม Token ตั้งแต่ตอนล็อกอินแล้ว
+> - เมธอด `GET` ทั้งหมดไม่บันทึกลงตาราง `activity_log` เพื่อลดขนาดฐานข้อมูล
 
 ---
 
@@ -451,3 +455,51 @@ function ScanLogCard({ log }) {
   width="320" 
 />
 ```
+
+---
+
+## 9. Get Users (ดึงรายชื่อบัญชีผู้ใช้)
+ดึงรายชื่อผู้ใช้งานในระบบ โดยคัดเฉพาะฟิลด์ที่ปลอดภัย (**ไม่ส่ง `password` และ `token`**)
+
+- **Endpoint**: `GET /iiot/get/users`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Query Parameters**:
+  | Parameter | Type | Default | Description |
+  |---|---|---|---|
+  | `page` | integer | `1` | หน้าที่ต้องการแสดง |
+  | `limit` | integer | `20` | จำนวนรายการต่อหน้า |
+  | `role` | string | - | กรองตามสิทธิ์ (`admin`, `teacher`, `dev`) |
+  | `search` | string | - | ค้นหา `university_id`, `first_name`, `last_name` หรือ `role` |
+  | `is_delete` | boolean | `false` | `true` เพื่อดูบัญชีที่ถูก Soft Delete |
+
+- **Response (200 OK)**:
+  ```json
+  {
+    "success": true,
+    "status": 200,
+    "data": [
+      {
+        "user_id": 1,
+        "university_id": "67159200",
+        "first_name": "อธิป",
+        "last_name": "ปทุมสูติ",
+        "role": "dev",
+        "created_at": "2026-10-18T19:05:34.000Z",
+        "last_login_at": "2026-11-17T13:12:55.000Z",
+        "is_delete": false
+      }
+    ]
+  }
+  ```
+
+---
+
+## 10. Server-Sent Events (SSE Real-time Stream)
+ใช้เปิดการเชื่อมต่อค้างไว้เพื่อรับการอัปเดต Dashboard และสถานะอุปกรณ์แบบ Real-time
+
+- **Endpoint**: `GET /iiot/events/stream`
+- **Authentication**: `Bearer <JWT_TOKEN>`
+- **Events ที่ส่งกลับมา**:
+  - `event: connected` ➔ `data: {"ok":true}` (ส่งทันทีเมื่อเชื่อมต่อสำเร็จ)
+  - `event: DashboardUpdate` ➔ ส่งสถิติและรายการสแกนล่าสุดเมื่อมีการแตะบัตรหรืออัปโหลดภาพใหม่
+  - `event: DevicesUpdate` ➔ ส่ง Array ของอุปกรณ์/กล้องที่มีการเปลี่ยนสถานะ Online/Offline

@@ -11,7 +11,7 @@
 | เอกสาร | รายละเอียด | ลิงก์เข้าสู่เอกสาร |
 |---|---|---|
 | 🟢 **API Endpoints (GET)** | สเปก API ดึงข้อมูลทั้งหมด (`/get/group`, `/get/device`, `/get/mqtt`, `/get/tag`, `/get/log`, `/get/dashboard`) พร้อมวิธีการดึงรูปภาพ Static Assets ไปแสดงผลที่ Dashboard | 🔗 [docs/API_GET.md](./docs/API_GET.md) |
-| 🔵 **API Endpoints (POST)** | สเปก API บันทึก/ส่งข้อมูลทั้งหมด (`/signin`, `/login`, `/logout`, `/post/group`, `/post/device`, `/post/req_connect`, `/post/mqtt`, `/post/upload_img`) | 🔗 [docs/API_POST.md](./docs/API_POST.md) |
+| 🔵 **API Endpoints (POST)** | สเปก API บันทึก/ส่งข้อมูลทั้งหมด (`/register-account`, `/login`, `/logout`, `/post/group`, `/post/device`, `/post/req_connect`, `/post/mqtt`, `/post/upload_img`) | 🔗 [docs/API_POST.md](./docs/API_POST.md) |
 | 🟠 **API Endpoints (PATCH)** | สเปก API อัปเดตข้อมูลและ Soft Delete ทั้งหมด (`/patch/account`, `/patch/group`, `/patch/device`, `/patch/mqtt`, `/patch/tag`) | 🔗 [docs/API_PATCH.md](./docs/API_PATCH.md) |
 | 📡 **MQTT Protocol Spec** | มาตรฐานการสื่อสารผ่าน MQTT, Topic Hierarchy (`status`, `rfid`, `CAM`, `CMD`), โครงสร้าง Payload, LWT และ QoS | 🔗 [docs/MQTT_PROTOCOL.md](./docs/MQTT_PROTOCOL.md) |
 | 🔌 **Hardware Integration Guide** | วงจรชีวิตของฮาร์ดแวร์ (Lifecycle), Flow Handshake, ลูปการทำงาน, การต่อสาย Pinout และข้อกำหนดสำหรับเปลี่ยนกล้องรุ่นอื่นในอนาคต | 🔗 [docs/HARDWARE_INTEGRATION.md](./docs/HARDWARE_INTEGRATION.md) |
@@ -23,7 +23,7 @@
 
 1. **User JWT Token**: ใช้สำหรับฝั่ง Web Dashboard ในการเรียกใช้งาน API Protected Routes (GET / POST / PATCH)
    - Header: `Authorization: Bearer <JWT_TOKEN>`
-   - ได้รับจากการยิง `POST /iiot/login` หรือ `POST /iiot/signin`
+   - ได้รับจากการยิง `POST /iiot/login` (ส่งกลับมาพร้อมข้อมูลโปรไฟล์ใน `data`) หรือ `POST /iiot/register-account`
 2. **Device API Key**: ใช้สำหรับฮาร์ดแวร์ IoT (ESP32 RFID / ESP32-S3 Cam)
    - Header: `Authorization: <key_api>`
    - ได้รับครั้งแรกเมื่อแอดมินสร้างอุปกรณ์ผ่าน `POST /iiot/post/device`
@@ -35,29 +35,31 @@
 ## 🛠️ รายการ Endpoint ทั้งหมดโดยสรุป
 
 ### 🟢 เมธอด GET
-- `GET /iiot/get/me` — ดึงข้อมูลโปรไฟล์ผู้ใช้ปัจจุบันจาก Token
+- `GET /iiot/get/users` — ดึงรายชื่อบัญชีผู้ใช้ (ไม่ส่ง `password` และ `token`)
 - `GET /iiot/get/dashboard` — สรุปสถิติระบบและ 10 สแกนล่าสุด
 - `GET /iiot/get/log` — ประวัติการสแกนบัตร RFID พร้อม `image_path`
+- `GET /iiot/get/system-log` — ประวัติการทำงานของระบบ (System / Activity Logs)
 - `GET /iiot/get/device` — รายชื่ออุปกรณ์ RFID / CAM
 - `GET /iiot/get/ip_cam` — รายชื่อกล้อง IP Camera ประจำกลุ่ม
 - `GET /iiot/get/group` — รายชื่อกลุ่มอุปกรณ์
 - `GET /iiot/get/mqtt` — รายชื่อการตั้งค่า MQTT ประจำกลุ่ม
 - `GET /iiot/get/tag` — รายการแท็ก RFID ในระบบ
+- `GET /iiot/events/stream` — เชื่อมต่อ SSE Real-time Event Stream
 - `GET /uploads/:filename` — ดึงไฟล์ภาพถ่ายหลักฐานจาก Server
 
 ### 🔵 เมธอด POST
-- `POST /iiot/signin` — ลงทะเบียนผู้ใช้งานใหม่ผ่าน API มหาวิทยาลัย
-- `POST /iiot/login` — เข้าสู่ระบบ
+- `POST /iiot/register-account` — สร้างบัญชีผู้ใช้งานใหม่ (เฉพาะ `dev`/`teacher` หรือบัญชี `dev` แรกหลัง Reset DB)
+- `POST /iiot/login` — เข้าสู่ระบบ (รับ Token + ข้อมูลโปรไฟล์)
 - `POST /iiot/logout` — ออกจากระบบและทำลาย Session ใน Redis
 - `POST /iiot/post/group` — สร้างกลุ่มอุปกรณ์ใหม่
 - `POST /iiot/post/device` — ลงทะเบียนอุปกรณ์ใหม่ (รับ `key_api`)
-- `POST /iiot/post/req_connect` — อุปกรณ์ IoT ส่ง MAC + Key เพื่อ Handshake รับ Config MQTT
+- `POST /iiot/post/req_connect` — อุปกรณ์ IoT ส่ง MAC + IP + Key เพื่อ Handshake รับ Config MQTT
 - `POST /iiot/post/mqtt` — บันทึกการตั้งค่า Broker/Topic ประจำกลุ่ม
 - `POST /iiot/post/upload_img` — กล้อง ESP32-S3 อัปโหลดภาพหลักฐาน (Multipart Form-Data)
 - `POST /iiot/post/ip_cam` — ลงทะเบียนกล้อง IP Camera (RTSP / ONVIF / Snapshot พร้อม Zod Validation)
 
 ### 🟠 เมธอด PATCH
-- `PATCH /iiot/patch/account` — แก้ไขสิทธิ์ (Role), รหัสผ่าน, หรือระงับบัญชีผู้ใช้
+- `PATCH /iiot/patch/account` — แก้ไขสิทธิ์ (Role), รหัสผ่าน (Hash อัตโนมัติ), หรือระงับบัญชีผู้ใช้ตามสิทธิ์ (`admin < teacher == dev`)
 - `PATCH /iiot/patch/group` — แก้ไขชื่อกลุ่มอุปกรณ์ หรือ Soft Delete / Restore
 - `PATCH /iiot/patch/device` — แก้ไขข้อมูลอุปกรณ์ IoT (พร้อมเตือน MQTT disconnect)
 - `PATCH /iiot/patch/ip_cam` — แก้ไขข้อมูลกล้อง IP Camera หรือ Soft Delete / Restore (พร้อม Zod Validation)

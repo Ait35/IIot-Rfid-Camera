@@ -23,7 +23,7 @@ Content-Type: application/json
 
 | Endpoint | หน้าที่ | Body สำคัญ | ฟังก์ชันเพิ่มเติม / Side Effects |
 |---|---|---|---|
-| `PATCH /iiot/patch/account` | แก้ไขรหัสผ่าน, สิทธิ์ (Role) หรือลบบัญชีผู้ใช้ | `role`, `password`, `is_delete` | หาก `is_delete: true` จะเตะ Session ใน Redis ออกทันที |
+| `PATCH /iiot/patch/account` | แก้ไขรหัสผ่าน, สิทธิ์ (Role) หรือลบบัญชีผู้ใช้ตามสิทธิ์ | `traget_id`, `role`, `password`, `is_delete` | Hash รหัสผ่านใหม่ด้วย Bcrypt และเตะ Session ใน Redis เมื่อ `is_delete: true` |
 | `PATCH /iiot/patch/group` | แก้ไขชื่อกลุ่มอุปกรณ์ หรือระงับกลุ่ม | `group_id`, `group_name`, `is_delete` | รองรับ Soft Delete/Restore |
 | `PATCH /iiot/patch/device` | แก้ไขข้อมูลอุปกรณ์ (ชื่อ, IP, สถานที่ติดตั้ง) | `device_id`, `device_name`, `local`, ... | ยิงคำสั่ง MQTT `CMD: "disconnect"` บังคับให้อุปกรณ์ต่อใหม่ |
 | `PATCH /iiot/patch/mqtt` | แก้ไข Topic, Username, Password ของ MQTT | `mqtt_id`, `topic`, `user_mqtt`, `pass_mqtt` | Broadcast MQTT `CMD: "disconnect"` ไปยังอุปกรณ์ในกลุ่ม |
@@ -31,8 +31,10 @@ Content-Type: application/json
 
 ---
 
-## 1. Update Account (แก้ไขข้อมูลบัญชีผู้ใช้)
-ใช้สำหรับเปลี่ยนสิทธิ์ (Role), เปลี่ยนรหัสผ่าน หรือระงับบัญชี (Soft Delete) โดย User ID จะถูกดึงจาก JWT Token อัตโนมัติ
+## 1. Update Account (แก้ไขข้อมูลบัญชีผู้ใช้ตาม Role)
+ใช้สำหรับเปลี่ยนสิทธิ์ (Role), เปลี่ยนรหัสผ่าน (ระบบ Hash ด้วย Bcrypt ให้อัตโนมัติ) หรือระงับ/กู้คืนบัญชี (Soft Delete / Restore) โดยตรวจสอบสิทธิ์ตามลำดับขั้น (`admin < teacher == dev`):
+- **`dev` / `teacher`:** แก้ไข, ลบ หรือกู้คืนบัญชีใดก็ได้
+- **`admin`:** แก้ไขหรือลบได้เฉพาะบัญชีระดับ `admin` (ห้ามแก้, ลบ หรือตั้งสิทธิ์ให้ใครเป็น `teacher` หรือ `dev`)
 
 - **Endpoint**: `PATCH /iiot/patch/account`
 - **Authentication**: `Bearer <JWT_TOKEN>`
@@ -40,13 +42,17 @@ Content-Type: application/json
 - **Request Body**:
   | Field | Type | Required | Description |
   |---|---|---|---|
-  | `role` | string | ❌ | สิทธิ์ใหม่: `'student'`, `'teacher'`, `'admin'`, `'dev'` |
-  | `password` | string | ❌ | รหัสผ่านใหม่ |
+  | `traget_id` | integer | ✅ | ID ของบัญชีผู้ใช้ (`user_id`) ที่ต้องการแก้ไข |
+  | `role` | string | ❌ | สิทธิ์ใหม่: `'admin'`, `'teacher'`, `'dev'` |
+  | `password` | string | ❌ | รหัสผ่านใหม่ (อย่างน้อย 6 ตัวอักษร, ระบบจะ Hash ให้ก่อนบันทึก) |
   | `is_delete` | boolean | ❌ | `true` เพื่อระงับบัญชี (ลบ session ทันที), `false` เพื่อคืนสถานะ |
+
+  *(ต้องระบุอย่างน้อย 1 ฟิลด์นอกจาก `traget_id`)*
 
   *ตัวอย่าง Body:*
   ```json
   {
+    "traget_id": 3,
     "role": "teacher"
   }
   ```
