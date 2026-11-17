@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import HelperService from '../service/helper_func.js';
 import { QueryRedis } from '../Infra/Redis/cache.js';
+import { db } from '../Infra/connect_db.js';
 
 export const authMiddleware = async (req:Request, res:Response, next:NextFunction) => {;
     console.log('----- API action: authMiddleware -----');
@@ -42,5 +43,26 @@ export const authMiddleware = async (req:Request, res:Response, next:NextFunctio
         next();
     } catch (error) {
         res.status(401).json({ message: 'กรุณาใช้ Token เข้าสู่ระบบ' });
+    }
+};
+
+export const firstDevOrAuthMiddleware = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!db) {
+            return res.status(500).json({ success: false, status: 500, error: 'Database not connected' });
+        }
+        const checkRes = await db.query(
+            "SELECT 1 FROM users WHERE is_delete = FALSE AND role IN ('dev', 'teacher') LIMIT 1"
+        );
+
+        if (checkRes.rowCount === 0) {
+            (req as any).isFirstSetup = true;
+            return next();
+        }
+
+        return authMiddleware(req, res, next);
+    } catch (error) {
+        console.error('error in firstDevOrAuthMiddleware:', error);
+        return res.status(500).json({ success: false, status: 500, error: 'Internal Server Error' });
     }
 };

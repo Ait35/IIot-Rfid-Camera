@@ -7,6 +7,7 @@ import HelperService from '../helper_func.js';
 import { QueryRedis } from '../../Infra/Redis/cache.js';
 import { updateData } from '../../Repository/updataQuery.js';
 import { LoginInput } from '../../schemas/auth.schema.js';
+import Service from '../helper_func.js';
 
 export const LoginService = {
     async login(inputData: LoginInput, ip: string, userAgent: string) {
@@ -17,9 +18,13 @@ export const LoginService = {
         }
 
         const { university_id, password } = inputData;
-
         // หาใน database
-        const res_db = await LoginQuery.Login(university_id, password);
+        const res_db = await LoginQuery.Login(university_id);
+
+        if(!await Service.verifyHash(password , res_db.data?.password)){
+            console.log(`Invalid password`)
+            return { success: false, status: 400, error: `Invalid password` };
+        }
 
         if (res_db.status !== 200 || res_db.data === 0) {
             console.log(res_db.error);
@@ -54,12 +59,14 @@ export const LoginService = {
         try {
             await transaction.query('BEGIN');
 
-            const Token = HelperService.genToken(userInfo.user_id);
-            await Query.Tran_updateToken(userInfo.user_id, Token, transaction);
+            const NewToken = HelperService.genToken(userInfo.user_id);
+            await Query.Tran_updateToken(userInfo.user_id, NewToken, transaction);
             // อัพเดต Redis เสมอ เพื่อให้ Session ถูกรีเฟรช และมีข้อมูลตรงกับ Token ปัจจุบัน
             await QueryRedis.delCache(String(userInfo.user_id), 'session');
-            await QueryRedis.setCache(String(userInfo.user_id), 'session', { token: Token });
+            await QueryRedis.setCache(String(userInfo.user_id), 'session', { token: NewToken });
             console.log('✅Update Token Successful!');
+
+            userInfo.token = NewToken;
 
             if (res_api !== null && res_api.data !== null) {
                 if (res_db.data.first_name !== res_api.data.first_name || res_db.data.last_name !== res_api.data.last_name) {
@@ -67,6 +74,7 @@ export const LoginService = {
                         first_name: res_api.data.first_name,
                         last_name: res_api.data.last_name
                     }, transaction);
+                    
                     if (!res_update.success) {
                         console.log('Failed to update name use old name :', res_update);
                     }
@@ -88,14 +96,7 @@ export const LoginService = {
             return {
                 success: true,
                 status: 200,
-                token: Token,
-                user: {
-                    user_id: userInfo.user_id,
-                    university_id: userInfo.university_id,
-                    first_name: userInfo.first_name,
-                    last_name: userInfo.last_name,
-                    role: userInfo.role
-                }
+                data : userInfo
             };
         } catch (error) {
             await transaction.query('ROLLBACK');
